@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "JBL Headphones OTA configuration (observed)",
+  "description": "Schema of the ota_config.json served for the JBL Wave Buds 2 (PID 2100), as observed via the companion app. The firmware record is the stable part; the surrounding envelope varied between responses (observed root/sibling keys: pid, name, firmware, tone; and a nested product { ..., case, case_v2, dongle, tone } form). Tools locate the firmware record by matching the firmware{version,md5,bin} shape next to a pid, rather than assuming a fixed path.",
+  "type": "object",
+  "definitions": {
+    "firmware": {
+      "type": "object",
+      "required": ["version", "md5", "bin"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "OTA release label (a separate namespace from the GATT firmware-version triple; see docs/03)."
+        },
+        "md5": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$",
+          "description": "MD5 of the entire packaged .bin; used by the app to verify the download. Not the internal container CRC-32 (see docs/02)."
+        },
+        "bin": {
+          "type": "string",
+          "description": "Firmware filename. The download URL is reconstructed by the app from the Harman storage route + PID, so this must stay intact when the config is rewritten."
+        },
+        "only_support_greater_than": {
+          "type": "string",
+          "description": "Optional lower-bound gate checked by OTAUtil.hasOTAUpdate(); omitted in the captured config."
+        },
+        "app_greater_than": {
+          "type": "string",
+          "description": "Optional minimum app version."
+        },
+        "whats_new": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "properties": {
+    "pid": {
+      "type": ["integer", "string"],
+      "description": "Product id, e.g. 2100 for the Wave Buds 2."
+    },
+    "name": {
+      "type": "string"
+    },
+    "firmware": {
+      "$ref": "#/definitions/firmware"
+    },
+    "tone": {
+      "description": "Voice-prompt/tone package record (structure not analyzed here)."
+    }
+  }
+}
