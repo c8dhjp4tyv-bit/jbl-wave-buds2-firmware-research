@@ -1,0 +1,27 @@
+# Never commit proprietary binaries, captures, or keys.
+*.bin
+*.apk
+*.apks
+*.dex
+*.i64
+*.idb
+*.pem
+*.crt
+*.cer
+*.der
+*.keystore
+*.ks
+captures/
+apk-in/
+build/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/

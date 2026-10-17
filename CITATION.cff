@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you reference this reverse-engineering work, please cite it as below."
+title: "JBL Wave Buds 2 — Firmware and OTA Reverse-Engineering Research"
+abstract: >-
+  End-to-end reverse engineering of the JBL Wave Buds 2 (Bestechnic BES1306)
+  firmware and OTA update path: on-flash layout, OTA container format and CRC
+  recipe, BLE/GATT command protocol, the BES TOTA v2 encrypted transport, the
+  device- and app-side trust boundaries (no on-device firmware signing; no
+  certificate pinning), and a reproducible owner-device firmware delivery method.
+type: software
+authors:
+  - alias: umutcagand
+    orcid: "https://orcid.org/0009-0005-8567-2600"
+    email: umutcagand@protonmail.com
+repository-code: "https://github.com/c8dhjp4tyv-bit/jbl-wave-buds2-firmware-research"
+version: "1.0.0"
+date-released: "2026-10-17"
+license: "MIT AND CC-BY-4.0"
+keywords:
+  - reverse-engineering
+  - firmware
+  - OTA
+  - Bluetooth
+  - BLE
+  - Bestechnic
+  - BES1306
+  - JBL
+  - TWS-earbuds
+  - hardware-security
