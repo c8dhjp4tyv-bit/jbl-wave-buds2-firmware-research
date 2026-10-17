@@ -31,6 +31,28 @@ application image (IDA, 7960 functions):
 - The flash-copy routine `sub_2C092014` erases and programs bytes with no hash,
   CRC, or signature check of its own.
 
+## Device-side confirmation (the OTA handler)
+
+The claim above is not only from the absence of strings. The OTA command handler
+`sub_2C0918BC` was decompiled, and every integrity check it performs is CRC-32:
+
+- The integrity primitive is `sub_2C0CE944`, a textbook table-driven CRC-32
+  (`~init`; `table[(byte ^ crc) & 0xFF] ^ (crc >> 8)`; `~final`; table at
+  `0x2C0F5218`). It is the only checksum the handler uses.
+- `OTAConfigure` (opcode `0x86`) rejects a wrong config length ("plaese check
+  config len. %d != %d", expecting 92 bytes) and validates the config's own
+  CRC-32 over its first 88 bytes (`MEMORY[0x20027418] == sub_2C0CE944(0, cfg, 88)`).
+- `segmentCRC` (opcode `0x82`) compares a running CRC-32 of the received data to
+  the value carried after the `"BEST"` magic (`0x54534542`).
+- `startOTA` (opcode `0x80`) records the image size and expected CRC-32 and
+  enforces the `"BEST"` magic.
+- `imageOverwriteConfirm` (opcode `0x92`) sets the activation flag
+  (`MEMORY[0x200274F4] = 1`) only once the whole-image CRC matches.
+
+No signature or hash verification appears anywhere in the handler — only CRC-32
+and a magic constant. This confirms the "no image signing" finding from the
+device side, independently of the app-side analysis and the empirical boot test.
+
 ## Secure boot
 
 BES1306 is a Cortex-M33 with TrustZone-M (the `SecureFault` handler confirms the

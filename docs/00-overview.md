@@ -43,8 +43,9 @@ IDA 9.4 (Hex-Rays) with image base `0x2C010000` (7960 functions).
 | 2 | The app's RSA-2048 verifier is **anti-counterfeit** (device authenticity), not firmware signing. | `com.jbl.counterfeit.Rsa2048DynamicVerifier`; the `AuthenticateDevice` device-info feature. |
 | 3 | The companion app does **not pin** its OTA endpoints. | No `CertificatePinner` configured; adding a user CA via `network_security_config` is sufficient to intercept OTA traffic. |
 | 4 | OTA is **staged**; the download phase is brick-safe. | `sub_2C092014` copies into flash at base `0x28120000` (offset `0x120000`) while the running application at `0x010000` is untouched during transfer. |
-| 5 | An external BLE central **cannot drive** the device OTA because the accept path is gated on TWS role. | Device-side OTA handler requires role ∈ {0,255}; see [06-ota-protocol.md](06-ota-protocol.md). |
+| 5 | An external BLE central **cannot drive** the device OTA because the accept path is gated on an internal TWS/connection state. | The OTA handlers require `MEMORY[0x20026BA0]` ∈ {2, 4} (`sub_2C0905E4`, 18 call sites); see [06-ota-protocol.md](06-ota-protocol.md). |
 | 6 | The BES "TOTA v2" transport uses a **client-derived AES-128 session key**; no server/device secret is involved. | Handshake and key schedule reproduced and verified live; see [05-ble-gatt-and-commands.md](05-ble-gatt-and-commands.md). |
+| 7 | The device-side OTA handler confirms **CRC-32-only** integrity. | `sub_2C0918BC` validates config/segment/whole-image with CRC-32 (`sub_2C0CE944`) and a `"BEST"` magic; no signature or hash; see [04-security-model.md](04-security-model.md). |
 
 ## Methodology
 
@@ -62,7 +63,9 @@ IDA 9.4 (Hex-Rays) with image base `0x2C010000` (7960 functions).
 - [05-ble-gatt-and-commands.md](05-ble-gatt-and-commands.md) — GATT map, command protocol, TOTA v2 transport
 - [06-ota-protocol.md](06-ota-protocol.md) — OTA command set, send sequence, the TWS-role gate
 - [07-app-side-analysis.md](07-app-side-analysis.md) — app OTA-config path, RSA verifier, no pinning
-- [08-function-catalog.md](08-function-catalog.md) — IDA function catalogue by module
+- [08-delivery-method.md](08-delivery-method.md) — reproducible owner-device delivery method
+- [09-function-catalog.md](09-function-catalog.md) — IDA function catalogue by module
+- [10-factory-console.md](10-factory-console.md) — verified 59-command factory/engineering console
 
 ## Scope and limitations
 
@@ -74,4 +77,8 @@ IDA 9.4 (Hex-Rays) with image base `0x2C010000` (7960 functions).
   and after a confirmed official 2.9.0 update on this unit, so it is **not** a
   reliable post-update version oracle. The app's own About screen is the
   user-facing version.
+- The factory/engineering console ([10](10-factory-console.md)) exists and can
+  write device identity and calibration, but its over-the-air reachability was
+  not demonstrated — the dispatch table has no direct cross-reference, and only a
+  UART entry path is established. Treated as an open question, not a remote surface.
 - Findings are from one hardware unit and the firmware revisions named above.

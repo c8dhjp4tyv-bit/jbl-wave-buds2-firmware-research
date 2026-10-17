@@ -18,10 +18,11 @@ re-derived by opening the decompressed image in IDA and following the cross-refe
 
 | Address | Role |
 |---|---|
-| `sub_2C0918BC` (0x622) | main OTA command handler |
+| `sub_2C0918BC` (0x622) | main OTA command handler; opcode dispatch (`0x80` start / `0x86` config / `0x82` segment-CRC / `0x85` data / `0x92` overwrite); every integrity check is CRC-32 |
 | `sub_2C091488`, `sub_2C0911B4`, `sub_2C091EE0`, `sub_2C091300`, `sub_2C0909A8` | OTA handler helpers |
 | `sub_2C0905E4` | OTA-state gate: returns true only when `MEMORY[0x20026BA0]` ∈ {2, 4} (18 call sites across the cluster) |
 | `app_tota_cmd_handler` (~`sub_2C09236C` / `sub_2C092494`) | TOTA command handler + response supervision |
+| `sub_2C0CE944` | CRC-32 (table-driven; table at `0x2C0F5218`) — config / segment / whole-image integrity |
 
 ## SPP / command transport
 
@@ -59,3 +60,5 @@ and are listed for completeness, not as a recommended thing to exercise.
 | `0x2C03487B` / `0x2C03E168` | `HARMAN+JBL_WAVE_BUDS2+20240516+V1.0.4` |
 | `0x2C0F899C` | embedded build-config blob |
 | `0x2C0162B3` | ` (SecureFault)` — Cortex-M33 exception name |
+| `0x2C0F5218` | CRC-32 lookup table |
+| `0x2C0F10B0` | factory command table, 59 entries; see [10](10-factory-console.md) |

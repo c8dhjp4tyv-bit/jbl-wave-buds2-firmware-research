@@ -46,6 +46,7 @@ Details and evidence are in [`docs/`](docs/).
 | [07 — App-side analysis](docs/07-app-side-analysis.md) | config path, RSA verifier, no pinning |
 | [08 — Delivery method](docs/08-delivery-method.md) | reproducible owner-device method |
 | [09 — Function catalogue](docs/09-function-catalog.md) | IDA functions by module |
+| [10 — Factory console](docs/10-factory-console.md) | verified 59-command engineering console |
 
 ## Tools
 

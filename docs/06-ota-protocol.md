@@ -47,6 +47,22 @@ is no hash or signature — consistent with [04](04-security-model.md).
 11 device validates whole-image CRC-32 → reboot / activate
 ```
 
+## Device-side validation (what the handler checks)
+
+`sub_2C0918BC` was decompiled; its opcode dispatch and checks are:
+
+| Opcode | Handler action | Integrity check |
+|---|---|---|
+| `0x80` startOTA | records image size and expected CRC-32 | `"BEST"` magic (`0x54534542`) |
+| `0x86` OTAConfigure | enforces config length (92) and config CRC-32 over the first 88 bytes | CRC-32 (`sub_2C0CE944`) |
+| `0x82` segmentCRC | compares a running CRC-32 of received data to the expected value | CRC-32 after `"BEST"` |
+| `0x85` dataPacket | writes the chunk into the staging buffer / flash | none |
+| `0x92` imageOverwriteConfirm | sets the activation flag `MEMORY[0x200274F4] = 1` once the whole-image CRC matches | CRC-32 |
+
+The integrity primitive throughout is `sub_2C0CE944`, a table-driven CRC-32
+(table at `0x2C0F5218`). No signature or hash appears anywhere in the handler —
+device-side confirmation of the security model in [04](04-security-model.md).
+
 ## The acceptance gate (why an external central stalls)
 
 Completing the TOTA v2 handshake is necessary but **not sufficient**. The
