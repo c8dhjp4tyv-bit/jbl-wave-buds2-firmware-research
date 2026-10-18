@@ -2,9 +2,10 @@
 
 This chapter documents, end to end, how a self-built firmware image is delivered
 to a **device you own** through the companion app's own OTA path. It is the
-practical consequence of three findings: no on-device firmware signing
-([04](04-security-model.md)), no pinning preventing the tested patched-app OTA connection
-([07](07-app-side-analysis.md)), and a fully understood container format
+practical consequence of three findings: CRC-only checks in the inspected
+application OTA handler ([04](04-security-model.md)), no pinning preventing the
+tested patched-app OTA connection ([07](07-app-side-analysis.md)), and the
+specified container format
 ([02](02-ota-container-format.md)).
 
 Nothing proprietary is distributed with this repository. You supply your own copy
@@ -12,10 +13,11 @@ of the app (obtained from your own device) and your own copy of the official
 firmware (fetched from JBL's server for your product). See
 [SECURITY.md](../SECURITY.md) for scope and disclosure.
 
-> The device-side OTA path has no signature check, but it is not foolproof: a
-> CRC-valid image that is functionally broken will still be activated and run,
-> and there is no exposed recovery. Treat every flash as irreversible. Validate
-> the pipeline with the **unmodified** official image first, and only ever flash
+> The inspected application OTA path has no identified signature check. A
+> CRC-valid image can pass these checks while still being functionally broken;
+> ROM checks remain unexamined and no recovery path was exposed. Treat every
+> flash as irreversible. Validate the pipeline with the **unmodified** official
+> image first, and only ever flash
 > an image derived from the **current** official image for your unit.
 
 ## Prerequisites
@@ -37,7 +39,8 @@ WAVEBUDS_REWRITE=0 mitmdump --set confdir=<ca-dir> -s tools/mitm_addon.py
 Record the `firmware.version`, `firmware.md5`, and `firmware.bin` for your PID,
 and the host/path (`appstorage.onecloud.harman.com/jbl_headphones/ota/<pid>/`).
 Download that official image and confirm its MD5 matches the config. This is your
-baseline and your recovery image.
+baseline reference. Keeping it does not provide a recovery method if activation
+leaves the device unable to update.
 
 ## Step 2 — Build your image from the current official one
 
@@ -50,8 +53,8 @@ python3 tools/ota_repack.py make-test <official_current.bin> <custom.bin>
 ```
 
 `ota_repack.py` refuses to emit unless an unchanged repack of the source is
-byte-identical, so a mistake in the format handling cannot silently produce a bad
-image. Record the new MD5 and size.
+byte-identical. This checks reproduction of the source format; it does not prove
+that an arbitrary patched image is safe to activate. Record the new MD5 and size.
 
 ## Step 3 — Patch the app's network trust configuration
 
@@ -118,13 +121,17 @@ completion. Then:
 
 Note: the GATT version readback (DeviceInfo feature 12) is not a reliable
 post-update oracle on this unit (see [03](03-firmware-image-layout.md)); the audio
-+ app checks are the real confirmation that the image activated and the device is
-healthy.
+and app checks establish observed device health. They do not independently show
+that the modified byte is present in the active application or that the submitted
+image executed.
 
 ## Validation performed
 
-This method was validated on the author's unit by first flashing the **unchanged**
+The owner tested this method on one unit by first flashing the **unchanged**
 official 2.9.0 image through the patched app (result: "Update Successful"), then a
 derived image differing in exactly one decompressed byte. The device reported
-success, rebooted, and remained fully functional — the empirical basis for the
-"no effective image signature" conclusion in [04](04-security-model.md).
+success, rebooted, and remained fully functional. These owner-reported outcomes
+record the reported update outcome and device health; without readback of the changed
+byte or a runtime marker, they do not independently prove execution of the
+modified image. See [04](04-security-model.md) and the
+[remaining hardware validation](VALIDATION.md#hardware-validation-boundary).

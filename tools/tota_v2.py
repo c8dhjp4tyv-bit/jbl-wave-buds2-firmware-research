@@ -27,6 +27,8 @@ HEAD, TAIL = b"HEAD", b"TAIL"
 MAGIC = b"BEST"
 TOTA_INNER = bytes([0x00, 0x90])
 AES_IV = bytes(range(16))
+# Local reference-tool limit, not a measured maximum supported by the device.
+MAX_TOTA_PAYLOAD = 64 * 1024
 
 TOTA_CHAR = "97979797-9797-9797-9797-979797979797"
 NAME_HINTS = ("jbl", "wave", "buds")
@@ -85,23 +87,46 @@ def _le32(n: int) -> bytes:
 
 
 def tota_wrap(payload: bytes) -> bytes:
+    if len(payload) > MAX_TOTA_PAYLOAD:
+        raise ValueError(f"TOTA payload exceeds {MAX_TOTA_PAYLOAD} bytes")
     return HEAD + _le32(len(payload)) + payload + _le32(_crc32(payload)) + TAIL
 
 
 def tota_unwrap(buf: bytes) -> tuple[list[bytes], bytes]:
+    """Decode CRC-valid frames, retaining only a possible incomplete frame.
+
+    Bad CRCs, tails, and oversized lengths are discarded while searching for
+    the next HEAD. A valid-looking incomplete frame is retained intact, since
+    HEAD can also occur inside a payload. Retained data is bounded by the local
+    payload limit plus 15 framing bytes. CRC detects corruption, not forgery.
+    """
     out: list[bytes] = []
     i = 0
     while True:
         h = buf.find(HEAD, i)
-        if h < 0 or len(buf) < h + 8:
-            break
-        length = struct.unpack("<I", buf[h + 4:h + 8])[0]
-        end = h + 8 + length + 4 + len(TAIL)
+        if h < 0:
+            # Preserve a split magic marker, but never accumulate arbitrary noise.
+            for size in range(min(len(HEAD) - 1, len(buf) - i), 0, -1):
+                if buf.endswith(HEAD[:size]):
+                    return out, buf[-size:]
+            return out, b""
+        if len(buf) < h + 8:
+            return out, buf[h:]
+        length = struct.unpack_from("<I", buf, h + 4)[0]
+        if length > MAX_TOTA_PAYLOAD:
+            i = h + 1
+            continue
+        payload_end = h + 8 + length
+        end = payload_end + 4 + len(TAIL)
         if len(buf) < end:
-            break
-        out.append(buf[h + 8:h + 8 + length])
+            return out, buf[h:]
+        payload = buf[h + 8:payload_end]
+        stored_crc = struct.unpack_from("<I", buf, payload_end)[0]
+        if buf[payload_end + 4:end] != TAIL or stored_crc != _crc32(payload):
+            i = h + 1
+            continue
+        out.append(payload)
         i = end
-    return out, buf[i:]
 
 
 def to_inner(cmd: bytes) -> bytes:
@@ -135,18 +160,27 @@ class TotaSession:
         self._buf = b""
 
     def start(self) -> bytes:
+        self.aes_key = b""
+        self._hash_key_b = b""
+        self.connected = False
+        self._buf = b""
         n = random.randint(16, 127)
         self.random_b = bytes(random.getrandbits(8) for _ in range(n))
         return tota_wrap(bytes([0x01, 0x10]) + _le16(n + 1) + bytes([n]) + self.random_b)
 
     def on_handshake(self, inner: bytes) -> int:
-        if len(inner) >= 2 and inner[0] == 0x02 and inner[1] == 0x10:
-            ralen = struct.unpack("<H", inner[2:4])[0] - 1
-            random_a = inner[5:5 + ralen]
+        if inner.startswith(b"\x02\x10"):
+            if len(inner) < 5 or not self.random_b:
+                return 0
+            declared_length = struct.unpack_from("<H", inner, 2)[0]
+            if declared_length <= 1 or len(inner) != 4 + declared_length:
+                return 0
+            random_a = inner[5:]
             self._hash_key_b = hashlib.sha256(bf_func1(random_a, self.random_b)).digest()
             self.aes_key = bf_func(self._hash_key_b)
             return 769
-        if len(inner) >= 15 and inner[0] == 0x00 and inner[1] == 0x10 and inner[12:15] == b"suc":
+        if (self.aes_key and len(inner) >= 15 and inner[:2] == b"\x00\x10"
+                and inner[12:15] == b"suc"):
             self.connected = True
             return 770
         return 0

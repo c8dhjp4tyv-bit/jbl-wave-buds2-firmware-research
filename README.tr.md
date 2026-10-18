@@ -29,18 +29,22 @@ English version: [README.md](README.md)
 
 *Test edilen ünitedeki donanım sonucu: uygulama + kullanıcı-CA MITM OTA hattı
 doğrulandıktan sonra iki kulaklık da bağlanıyor, %100 gösteriyor ve tüm uygulama
-kontrolleri (ANC/Ambient, hareketler, EQ) çalışıyor. Tek baytlık değiştirilmiş
-imaj da aynı yolla kabul edildi ve cihaz tamamen işlevsel kaldı.*
+kontrolleri (ANC/Ambient, hareketler, EQ) çalışıyor. Tek baytı değiştirilmiş paket
+gönderildiğinde sahibi güncelleme başarısı, yeniden başlatma ve normal çalışma
+bildirdi. Değiştirilen bayt cihazdan geri okunmadı; bu gözlem hangi imajın
+çalıştığını bağımsız olarak doğrulamıyor.*
 
 ## Doğrulanmış bulgular
 
 Adresler incelenen yapıdandır (`wavebuds.elf`); bkz.
 [adres defteri](docs/ADDRESS_LEDGER.md) ve [köken](docs/PROVENANCE.md).
 
-- OTA imajı **kriptografik olarak imzalı değildir**. Cihaz tarafı bütünlük yalnız
-  CRC-32'dir — handler `0x2C0918BC` config'i, her segmenti ve tüm imajı CRC-32
+- İncelenen uygulama OTA handler'ı **CRC-32 bütünlük kontrolleri** kullanır;
+  bu yolda firmware imzası doğrulaması belirlenmedi. Handler `0x2C0918BC`
+  config'i, her segmenti ve tüm imajı CRC-32
   rutini `0x2C0CE944` (tablo `0x2C0F5218`) ve bir `"BEST"` magic'iyle kontrol eder.
-  CRC-geçerli, tek baytı değiştirilmiş bir imaj kabul edildi ve boot etti.
+  Tek baytı değiştirilmiş paket için güncelleme başarısı bildirildi; değiştirilen
+  baytın çalıştığı ve ROM kontrollerinin durumu henüz doğrulanmadı.
 - Uygulamadaki RSA-2048 doğrulayıcı (`com.jbl.counterfeit.Rsa2048DynamicVerifier`)
   **anti-counterfeit** (cihaz gerçekliği) içindir, firmware imzası değil.
 - Test edilen **değiştirilmiş uygulama** OTA akışında pinning yerel proxy'yi
@@ -60,15 +64,17 @@ Adresler incelenen yapıdandır (`wavebuds.elf`); bkz.
 
 ## Test edilen değişiklik
 
-Değişiklik bilinçli olarak minimaldir — decompile imajın tek baytı. RTX çekirdek
-metnini `RTX V5.5.1` → `V5.5.2` yapar (decompile offset `64096`) ve container
-CRC-32 yeniden hesaplanır. Tasarım gereği kozmetiktir: amaç, cihazın CRC-geçerli
-değiştirilmiş bir imajı kabul ettiğini kanıtlamaktır, davranış değiştirmek değil.
+Değişiklik bilinçli olarak minimaldir — sıkıştırması açılmış imajın tek baytı.
+RTX çekirdek metnini `RTX V5.5.1` → `V5.5.2` yapar (imaj içi offset `64096`) ve
+container CRC-32 yeniden hesaplanır. Tasarım gereği kozmetiktir: amaç, davranışı
+değiştirmeden CRC-geçerli değiştirilmiş bir imajın gönderimini sınamaktır.
+Sahibi güncelleme başarısı ve normal çalışma bildirdi, ancak değiştirilen metin
+geri okunmadı; bkz. [donanım doğrulama sınırı](docs/VALIDATION.md#hardware-validation-boundary).
 
 ```text
 Temel (sahip tarafından verilir; dağıtılmaz)
   resmî 2.9.0 paketi    549.558 bayt   SHA-256 836cb251f9fb2261dde14f39ba18d358c48018817f3c3d1b527e1ac5f3ab7ba2
-  decompile imaj        955.596 bayt   SHA-256 489663e80b76f20f4c94671064908569fac5f4e3df10ab6d7369baffe094f67d
+  açılmış imaj         955.596 bayt   SHA-256 489663e80b76f20f4c94671064908569fac5f4e3df10ab6d7369baffe094f67d
   container CRC-32       A0C7CCEC (geçerli), aralık [0x0, 0x862AD)
 ```
 
@@ -78,12 +84,12 @@ Depo bilerek **hiçbir JBL firmware'i içermez**. Kendi yasal paketini ver ve te
 ```bash
 python3 tools/ota_unpack.py  <resmi_2.9.0_paketi.bin> --extract image.bin
 python3 tools/ota_repack.py  make-test <resmi_2.9.0_paketi.bin> test.bin
-python3 tools/ota_unpack.py  test.bin      # decompile'da tam olarak tek bayt farklı; CRC geçerli
+python3 tools/ota_unpack.py  test.bin      # açılmış imajda tam olarak tek bayt farklı; CRC geçerli
 ```
 
 Yeniden paketlenen container'ın tam baytları LZMA kodlayıcıya bağlıdır; cihaz
 **CRC-32'yi doğrular, paket hash'ini değil** (bkz. [docs/04](docs/04-security-model.md)),
-ve decompile tek-bayt farkı deterministiktir. Uygulama üzerinden gönderim:
+ve açılmış imajdaki tek-bayt farkı deterministiktir. Uygulama üzerinden gönderim:
 [docs/08](docs/08-delivery-method.md).
 
 ## Diyagramlar
@@ -119,8 +125,9 @@ ve decompile tek-bayt farkı deterministiktir. Uygulama üzerinden gönderim:
   özel imajı dağıtmaz.
 - Belgelenen derleme aracı anti-counterfeit doğrulamasına dokunmaz.
 - ROM bootloader'ın secure boot'tan yoksun olduğunu kanıtlamaz — o bölge her OTA
-  imajının dışındadır ve dökülmedi; iddia statik kanıt + tek ünitede gözlemlenen
-  değiştirilmiş-imaj boot'uyla sınırlandırılmıştır.
+  imajının dışındadır ve dökülmedi. Kanıt, incelenen uygulama OTA yolu ve tek
+  ünitede sahibinin bildirdiği güncelleme başarısıyla sınırlıdır; değiştirilmiş
+  bayt cihazdan geri okunmadı.
 - Fabrika konsolunun over-the-air erişilebilir olduğunu iddia etmez.
 - Hiçbir sonucun başka bir ünite, bölge veya firmware yapısı için geçerli olduğunu
   iddia etmez.

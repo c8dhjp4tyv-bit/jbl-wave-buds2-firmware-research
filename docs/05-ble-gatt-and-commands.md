@@ -92,6 +92,19 @@ During the handshake the payload is cleartext; afterwards the payload is
 AES-encrypted. Large data is split into `(mtu − 16)`-byte chunks, each in its own
 HEAD…TAIL frame.
 
+The host reference decoder in [`tools/tota_v2.py`](../tools/tota_v2.py) validates
+both the payload CRC-32 and `TAIL` before delivering a frame. It discards malformed
+frames and noise, preserves split headers and incomplete frames, and searches for
+the next `HEAD` after a failed check. An incomplete frame is retained until it
+completes; `HEAD` can occur inside its payload, so it is not a resynchronization
+point while that frame is incomplete.
+
+The reference tool limits each payload to **64 KiB** (`MAX_TOTA_PAYLOAD`), keeping
+the retained incomplete-frame buffer at most 64 KiB + 15 bytes. This is a local
+resource limit, **not** a measured device/protocol maximum. CRC-32 checks detect
+corruption and do not authenticate a sender. These host-side changes have offline
+regression coverage; they have not been re-tested on the author's hardware.
+
 ### Handshake
 
 ```

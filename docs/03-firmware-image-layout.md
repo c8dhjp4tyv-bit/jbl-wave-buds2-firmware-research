@@ -5,6 +5,11 @@ the application image — 955,596 bytes for 2.9.0 — mapped at base `0x2C010000
 (the cached-XIP window; see [01](01-hardware-flash-map.md)). The image has no ELF
 section table of its own; the boundaries below are read from the content.
 
+The header dump, approximate section boundaries, and build-config address below
+belong to the earlier analyzed `wavebuds.elf`, unless explicitly attributed to
+2.9.0. Its mapped `.text` range is 953,156 bytes. The RTX marker and first static
+product-id offset were checked in both builds; see [PROVENANCE.md](PROVENANCE.md).
+
 ## Image header (first 16 bytes)
 
 ```
@@ -49,6 +54,7 @@ are separate namespaces. The user-facing version is the app's About screen, not
 the GATT triple.
 
 This single-byte region (`RTX V5.5.1`, offset 64096) is also the change used to
-prove image acceptance in [04](04-security-model.md): patching the final byte
+test image delivery in [04](04-security-model.md): patching the final byte
 (`1` → `2`) and recomputing the container CRC yields an image that differs from
-the official one in exactly one decompressed byte.
+the official one in exactly one decompressed byte. The modified marker was not
+read back from the device, so update success alone does not prove its execution.

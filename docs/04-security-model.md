@@ -11,23 +11,28 @@ evidence for each claim.
 | OTA transport | BES "TOTA v2": AES-128-CBC session, key derived client-side (see [05](05-ble-gatt-and-commands.md)) | Encrypted BLE session payloads. AES-CBC and CRC do **not** alone provide cryptographic message integrity or authenticate the image. |
 | OTA image integrity | CRC-32 — container trailer (see [02](02-ota-container-format.md)); per-16 KiB segment CRC-32 and a whole-image CRC-32 in the protocol (see [06](06-ota-protocol.md)) | Detects corruption in transit. **Not** tampering. |
 
-## What is not present
+## What was not identified in the inspected application OTA path
 
-- No cryptographic **signature** over the firmware image (no RSA/ECDSA/Ed25519
-  verify applied to the image).
-- No image **hash** used for authentication (no SHA-1/SHA-256/MD5/HMAC over the image).
+- No cryptographic **signature verification** over the firmware image (no
+  RSA/ECDSA/Ed25519 verify applied to the image in the inspected path).
+- No image **hash** used for authentication in that path (no
+  SHA-1/SHA-256/MD5/HMAC over the image).
 - No **anti-rollback** / downgrade enforcement was identified in the application image; bootloader behavior remains unexamined.
 
-Evidence — an exhaustive string and routine search of the 955,596-byte
-application image (IDA, 7960 functions):
+The original string/routine searches and addresses below belong to the analyzed
+`wavebuds.elf` build (7,960 functions; mapped `.text` size 953,156 bytes).
+The separate 2.9.0 image decompresses to 955,596 bytes and yielded 8,126 functions
+in its direct IDA analysis. Its key OTA functions were re-anchored as described
+below and in [PROVENANCE.md](PROVENANCE.md).
 
-- The only integrity/crypto matches are `OTA_SEGMENT_CRC`, `CRC32_OF_IMAGE=0x`
+- The reported search anchors are `OTA_SEGMENT_CRC`, `CRC32_OF_IMAGE=0x`
   (the two CRC mechanisms), `ENCRYPTION_CHANGE` and the link-layer
   `em_bt_txrxcntl_txcrypt_setf` (Bluetooth transport, not the image), and the
   Cortex-M33 `SecureFault` exception name at `0x2C0162B3` (an ARM fault handler,
   unrelated to OTA).
-- There are **zero** occurrences of `sign`, `signature`, `rsa`/`ecdsa`,
-  `sha1`/`sha256`, `hmac`, `verify image`, or `secure boot` applied to the image.
+- Those searches did not identify image verification using `sign`, `signature`,
+  `rsa`/`ecdsa`, `sha1`/`sha256`, `hmac`, `verify image`, or `secure boot`.
+  Missing strings alone do not establish that cryptographic code is absent.
 - The flash-copy routine `sub_2C092014` erases and programs bytes with no hash,
   CRC, or signature check of its own.
 
@@ -50,12 +55,13 @@ The claim above is not only from the absence of strings. The OTA command handler
   (`MEMORY[0x200274F4] = 1`) only once the whole-image CRC matches.
 
 No signature or hash verification appears anywhere in the handler — only CRC-32
-and a magic constant. This confirms the "no image signing" finding from the
-device side, independently of the app-side analysis and the empirical boot test.
+and a magic constant. This establishes the CRC-only checks in the inspected
+application handler; it does not establish the behavior of the ROM bootloader.
 
 The same handler, gate, and CRC routine were re-confirmed by a direct IDA
 analysis of the **2.9.0** build (`sub_2C0918EC` / `sub_2C0905FC` / `sub_2C0CF480`),
-where they decompile identically. The finding is build-invariant; see
+where the same checks were recovered. This finding covers these two inspected
+builds; see
 [PROVENANCE.md](PROVENANCE.md) and [`generated/cross_build_map.csv`](generated/cross_build_map.csv).
 
 ## Secure boot
@@ -66,31 +72,33 @@ silicon capability), so hardware secure boot is *possible* in principle. The ROM
 and was not dumped, so it cannot be inspected directly. Two independent
 observations bound the question:
 
-1. The OTA image format carries **no signature block** — parsed byte-for-byte in
-   [02](02-ota-container-format.md), it is only LZMA streams plus a CRC-32
-   trailer. There is nowhere for a signature to live.
+1. The outer OTA container carries **no separate signature block** — parsed
+   byte-for-byte in [02](02-ota-container-format.md), it is LZMA streams plus a
+   CRC-32 trailer. This format observation alone does not rule out signed regions
+   inside the decompressed image or verification by code outside the OTA image.
 2. A CRC-valid image with a **single modified byte** (an application `.rodata`
    string, offset 64096; see [03](03-firmware-image-layout.md)) was delivered
    through the app's own OTA path. The device reported the update successful,
    rebooted, and remained fully functional — A2DP audio, app connectivity, and
    the About screen all normal.
 
-The one-byte change was reported to install and the device remained functional,
-consistent with no effective authentication of this modified application image.
-However, the updated string was **not independently read back from device flash**;
-ROM/bootloader code has not been dumped. This observation supports, but does not
-independently prove, the complete absence of ROM secure-boot checks.
+The one-byte change was reported to install and the device remained functional.
+However, the updated string was **not independently read back from device flash**
+or observed at runtime. These observations do not identify the active application
+bytes. ROM/bootloader code has not been dumped, so its authentication checks
+remain `UNRESOLVED`.
 
-## Brick surface
+## Activation and recovery limits
 
-- **Download phase — safe.** The new image is staged at `0x120000` while the
+- **Download phase — staged.** The new image is staged at `0x120000` while the
   running application at `0x010000` is untouched (see [01](01-hardware-flash-map.md)).
-- **Activation phase — the risk window.** The post-reboot staging→application
-  copy will move a CRC-valid-but-broken image into place and run it. No rollback
+  This reduces transfer-phase risk; it is not a universal recovery guarantee.
+- **Activation phase — the risk window.** A CRC-valid-but-broken image can pass
+  the inspected application OTA checks and reach the post-reboot copy. No rollback
   or fallback path was identified in the application image, and no exposed
   hardware recovery (e.g. a USB DFU pin) was surfaced. The hazard of firmware
-  modification is therefore **not** signature rejection but a functionally bad
-  image that still passes CRC.
+  modification includes a functionally bad image that still passes CRC.
+  ROM/bootloader checks and execution of the modified byte remain unverified.
 
 ## Where the observed trust boundary sits
 
