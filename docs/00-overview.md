@@ -22,34 +22,40 @@ disclosure position.
 | RTOS | Keil RTX5 |
 | BT vendor / product | `0x0ECB` (Bestechnic) / `0x2100` — referred to as "PID 2100" |
 | modalias | `v0ECBp2100d001F` |
-| Build (2.9.0 image) | `BUILD_DATE=Apr 22 2025 15:36:42`, `REV_INFO=d30e8f1:best1306_ibrt_anc` |
+| Build (analyzed `wavebuds.elf`) | `BUILD_DATE=Apr 22 2025 15:36:42`, `REV_INFO=d30e8f1` |
+| Build (2.9.0 image) | `BUILD_DATE=Sep 18 2026 10:43:07`, `REV_INFO=d5567b8-dirty` |
 
 Unit-specific identifiers (BT/BLE MAC, serial numbers) are redacted in examples;
 they are the author's unit and carry no analytical value.
 
 ## Firmware analyzed
 
-The reference image throughout is the official 2.9.0 package
+The container and delivery target is the official 2.9.0 package
 `COMPRESS_WAVE_BUDS2_OTA2_V2.9.0_56e441_20260918.bin` (549,558 bytes,
 MD5 `91cd9ade57c67ddc05ba993c82e1cf53`), served by JBL's OTA server for PID 2100.
-Its decompressed application image is 955,596 bytes. Static analysis was done in
-IDA 9.4 (Hex-Rays) with image base `0x2C010000` (7960 functions).
+Its decompressed application image is 955,596 bytes; its direct IDA analysis
+yielded 8,126 functions. Most documented function/RAM addresses instead come
+from the earlier, separately compiled `wavebuds.elf` (7,960 functions; mapped
+`.text` size 953,156 bytes). Both use image base `0x2C010000`. Key OTA functions
+were re-anchored in 2.9.0; see [PROVENANCE.md](PROVENANCE.md) for hashes and the
+cross-build map. These counts and ranges must not be combined into one build.
 
 ## Key findings
 
 | # | Finding | Basis |
 |---|---|---|
-| 1 | The OTA image is **not cryptographically signed**; integrity is CRC32 only. | No RSA/ECDSA/SHA/HMAC strings or routines exist in the application image; the container carries only a CRC32 trailer; a CRC-valid image with a single modified byte was accepted and booted. |
+| 1 | No firmware signature verification was identified in the **inspected application OTA path**. | The handler uses CRC-32 and `"BEST"` magic. The owner reported update success and normal operation after supplying a one-byte-modified package; execution of the changed byte was not independently verified. |
 | 2 | The app's RSA-2048 verifier is **anti-counterfeit** (device authenticity), not firmware signing. | `com.jbl.counterfeit.Rsa2048DynamicVerifier`; the `AuthenticateDevice` device-info feature. |
-| 3 | The companion app does **not pin** its OTA endpoints. | No `CertificatePinner` configured; adding a user CA via `network_security_config` is sufficient to intercept OTA traffic. |
-| 4 | OTA is **staged**; the download phase is brick-safe. | `sub_2C092014` copies into flash at base `0x28120000` (offset `0x120000`) while the running application at `0x010000` is untouched during transfer. |
+| 3 | Pinning did not block the **tested patched-app flow**. | A user-CA MITM worked after the owner's app trust configuration was changed; this does not establish that all stock-app pinning paths are absent. |
+| 4 | OTA is **staged**, reducing download-phase risk. | `sub_2C092014` copies into flash at base `0x28120000` (offset `0x120000`) while the running application at `0x010000` is untouched during transfer; this does not guarantee recovery after activation. |
 | 5 | An external BLE central **cannot drive** the device OTA because the accept path is gated on an internal TWS/connection state. | The OTA handlers require `MEMORY[0x20026BA0]` ∈ {2, 4} (`sub_2C0905E4`, 18 call sites); see [06-ota-protocol.md](06-ota-protocol.md). |
 | 6 | The BES "TOTA v2" transport uses a **client-derived AES-128 session key**; no server/device secret is involved. | Handshake and key schedule reproduced and verified live; see [05-ble-gatt-and-commands.md](05-ble-gatt-and-commands.md). |
 | 7 | The device-side OTA handler confirms **CRC-32-only** integrity. | `sub_2C0918BC` validates config/segment/whole-image with CRC-32 (`sub_2C0CE944`) and a `"BEST"` magic; no signature or hash; see [04-security-model.md](04-security-model.md). |
 
 ## Methodology
 
-- Firmware: static analysis of the decompressed 2.9.0 image in IDA 9.4 / Hex-Rays.
+- Firmware: IDA / Hex-Rays analysis of the earlier `wavebuds.elf`, plus direct
+  analysis of the decompressed 2.9.0 image to re-anchor key OTA functions.
 - Companion app: `apktool` / `androguard` on the JBL Headphones Android app.
 - Live device: Linux BlueZ + `bleak` for BLE/GATT; `mitmproxy` with a user CA for OTA-config capture.
 - Format: the container parser/packer in [tools/](../tools) round-trips the official package byte-for-byte, which is how each format claim here is checked.
@@ -62,17 +68,19 @@ IDA 9.4 (Hex-Rays) with image base `0x2C010000` (7960 functions).
 - [04-security-model.md](04-security-model.md) — trust boundaries, what is and is not verified
 - [05-ble-gatt-and-commands.md](05-ble-gatt-and-commands.md) — GATT map, command protocol, TOTA v2 transport
 - [06-ota-protocol.md](06-ota-protocol.md) — OTA command set, send sequence, the TWS-role gate
-- [07-app-side-analysis.md](07-app-side-analysis.md) — app OTA-config path, RSA verifier, no pinning
+- [07-app-side-analysis.md](07-app-side-analysis.md) — app OTA-config path, RSA verifier, tested trust configuration
 - [08-delivery-method.md](08-delivery-method.md) — reproducible owner-device delivery method
 - [09-function-catalog.md](09-function-catalog.md) — IDA function catalogue by module
-- [10-factory-console.md](10-factory-console.md) — verified 59-command factory/engineering console
+- [10-factory-console.md](10-factory-console.md) — factory/engineering console inventory (59 analyzed-build / 54 in 2.9.0)
 
 ## Scope and limitations
 
 - The ROM / secondary bootloader (flash `0x000000`–`0x010000`) is not part of any
   OTA image and was not dumped. Statements about boot-time verification are
-  bounded by (a) the absence of verification primitives in the application image
-  and (b) the empirical fact that a modified-but-CRC-valid image booted and ran.
+  bounded by the inspected application handler and owner-reported update success
+  and normal operation. The modified byte was not read back; neither the active
+  modified image nor the absence of ROM secure boot has been independently
+  established. See [VALIDATION.md](VALIDATION.md#hardware-validation-boundary).
 - Version readback over BLE (DeviceInfo feature `12`) returned `2.0.0` both before
   and after a confirmed official 2.9.0 update on this unit, so it is **not** a
   reliable post-update version oracle. The app's own About screen is the

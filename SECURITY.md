@@ -5,9 +5,12 @@
 This repository documents, among other findings, a security-relevant property of
 the JBL Wave Buds 2 (Bestechnic BES1306) update path:
 
-- The OTA firmware image is **not cryptographically signed**. On-device integrity
-  rests on CRC-32 alone (container trailer plus per-segment and whole-image CRC-32
-  in the protocol). A modified-but-CRC-valid image is accepted and booted (see
+- The inspected application OTA path uses **CRC-32 integrity checks** without
+  an identified firmware signature check (container trailer plus per-segment and
+  whole-image CRC-32 in the protocol). The owner reported update success and
+  normal operation after supplying a one-byte-modified package. The changed byte
+  was not read back; execution of that image and ROM authentication remain
+  unverified (see
   [docs/04-security-model.md](docs/04-security-model.md)).
 - In the tested **modified app**, a user-installed CA was trusted and a local
   proxy could replace OTA traffic. The stock app trusts system CAs only; merely
@@ -16,14 +19,15 @@ the JBL Wave Buds 2 (Bestechnic BES1306) update path:
 
 ## Impact
 
-For the device owner, this enables legitimate firmware modification. The
+The application checks do not authenticate the firmware publisher. The
 security concern is the combination: an attacker would need to compromise the
 app's effective TLS trust boundary (for example, via a system-trusted CA or a
 modified app that trusts their user CA) and control the OTA configuration and
 download responses. Installing a user CA alone was not shown to suffice for the
 unmodified app. In that threat model, device CRC checks do not authenticate the
-firmware publisher. There is no on-device signature backstop
-and no exposed recovery path if a bad image is activated.
+firmware publisher. No signature backstop was identified in the inspected
+application path; bootloader behavior is `UNRESOLVED`. No exposed recovery path
+was identified if a bad image is activated.
 
 ## Scope and ethics
 

@@ -14,7 +14,7 @@ require redistributed firmware or app code.
 | `inventory_ota_container.py` | emit per-stream layout CSV + package-inventory JSON | 2.9.0 package |
 | `extract_factory_table.py` | structurally locate and dump the factory command table | any decompressed image |
 | `export_ida_inventory.py` | export full function/string/segment inventory | analyzed build, inside IDA |
-| `tota_v2.py` | BES TOTA v2 transport reference (handshake, key schedule, framing, builders) | live BLE (your device) |
+| `tota_v2.py` | BES TOTA v2 reference; CRC/tail validation, bounded framing, handshake, key schedule, builders | synthetic tests / live BLE (your device) |
 | `ble_query.py` | read-only GATT device-info query | live BLE (your device) |
 | `mitm_addon.py` | capture / optionally rewrite the OTA config for your own device | your own traffic |
 | `patch_app.sh` | build helper for the delivery method (your own APK) | your own APK |
@@ -38,6 +38,12 @@ labeled accordingly:
 - key OTA handlers were re-anchored using a direct 2.9.0 decompressed-image IDA
   analysis; independent reproduction still requires the owner-supplied image;
 - the hardware observations are owner-reported on one unit.
+
+TOTA framing and handshake regression tests run without hardware or third-party
+dependencies. The reference decoder's 64 KiB payload limit is a host-side
+resource bound, not a measured device limit; see [05](05-ble-gatt-and-commands.md).
+Modified-byte readback remains absent; see
+[VALIDATION.md](VALIDATION.md#hardware-validation-boundary).
 
 ## What the tools do not do
 

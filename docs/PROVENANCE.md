@@ -2,8 +2,9 @@
 
 ## Authorship boundary
 
-The analysis scripts, generated catalogs, documentation, and static
+The original analysis scripts, generated catalogs, documentation, and static
 interpretations in this repository were produced by an AI assistant (Claude).
+Subsequent tooling and documentation corrections have also used Codex.
 The owner supplied the firmware, operated the phone and earbuds, and performed
 the hardware flashes. No claim here has had an independent human
 reverse-engineering review. Narrative claims carry addresses, disassembly, or a
@@ -46,9 +47,10 @@ the analyzed image is an owner-held dump of an earlier build.
   does not track the OTA release (see
   [03-firmware-image-layout.md](03-firmware-image-layout.md)).
 
-The architectural findings — CRC-32-only image integrity, the staged OTA, the
-TWS-state accept gate, the factory console, no on-device signing — hold for both
-builds. Exact addresses are build-specific and ledgered in
+The inspected application OTA handlers in both builds use CRC-32 checks without
+an identified image signature check. The staged OTA, TWS-state gate, and factory
+tables were also recovered in both. This does not establish the behavior of the
+unexamined bootloader. Exact addresses are build-specific and ledgered in
 [ADDRESS_LEDGER.md](ADDRESS_LEDGER.md).
 
 ## Evidence classes
@@ -73,10 +75,17 @@ builds. Exact addresses are build-specific and ledgered in
   confirmed official 2.9.0 update, so it is not a reliable post-update oracle.
 
 These are owner observations on a single unit, not independent laboratory
-reproduction.
+reproduction. The changed string was not read back from flash or observed through
+a runtime marker. App success, version `v2.9.0`, and normal operation establish
+the reported update outcome and device health; they do not independently identify
+the executing image. Execution of the modified byte remains `UNRESOLVED`.
 
 ## Evidence still required
 
+- Independent confirmation of the modified byte in the active application,
+  through readback or a runtime marker tied to the submitted image; record the
+  input/output hashes and observation together (see
+  [VALIDATION.md](VALIDATION.md#hardware-validation-boundary)).
 - UART / SWD access to the BES1306 and a dump of the ROM / secondary bootloader
   (`0x000000`–`0x010000`), the one region outside every OTA image.
 - Whether the factory/engineering console is reachable over the wireless command

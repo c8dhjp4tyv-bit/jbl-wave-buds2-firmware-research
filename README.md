@@ -29,19 +29,22 @@ Türkçe sürüm: [README.tr.md](README.tr.md)
 
 *Hardware result on the tested unit: after the app + user-CA MITM OTA pipeline was
 validated, both earbuds connect, report 100%, and every app control (ANC/Ambient,
-gestures, EQ) works. The one-byte-modified image was accepted the same way and
-the device stayed fully functional.*
+gestures, EQ) works. When the one-byte-modified package was supplied, the owner
+reported update success, reboot, and normal operation. The changed byte was not
+read back from the device; this is a health observation, not proof of which
+image executed.*
 
 ## Confirmed findings
 
 Addresses are from the analyzed build (`wavebuds.elf`); see the
 [address ledger](docs/ADDRESS_LEDGER.md) and [provenance](docs/PROVENANCE.md).
 
-- The OTA image is **not cryptographically signed**. Device-side integrity is
-  CRC-32 only — the handler `0x2C0918BC` checks config, each segment, and the
+- The inspected application OTA handler uses **CRC-32 integrity checks**, with
+  no firmware signature verification identified in that path. The handler
+  `0x2C0918BC` checks config, each segment, and the
   whole image with the CRC-32 routine `0x2C0CE944` (table `0x2C0F5218`) plus a
-  `"BEST"` magic. A CRC-valid image with one modified byte was accepted and
-  booted.
+  `"BEST"` magic. The one-byte-modified package produced a reported successful
+  update; execution of the modified byte and ROM checks remain unverified.
 - The app's RSA-2048 verifier (`com.jbl.counterfeit.Rsa2048DynamicVerifier`) is
   **anti-counterfeit** (device authenticity), not firmware signing.
 - In the tested **patched-app** OTA flow, certificate pinning did not block the
@@ -65,8 +68,9 @@ Addresses are from the analyzed build (`wavebuds.elf`); see the
 The modification is intentionally minimal — one byte of the decompressed image.
 It changes the RTX kernel string `RTX V5.5.1` → `V5.5.2` at decompressed offset
 `64096`, and the container CRC-32 is recomputed. It is cosmetic by design: the
-point is to prove the device accepts a modified-but-CRC-valid image, not to
-change behavior.
+point is to test the delivery of a modified-but-CRC-valid image without changing
+behavior. The owner reported success and normal operation, but the modified
+marker was not read back; see [the validation boundary](docs/VALIDATION.md#hardware-validation-boundary).
 
 ```text
 Base (owner-supplied; not redistributed)
@@ -123,8 +127,9 @@ in [docs/08](docs/08-delivery-method.md).
 - The documented build helper does not alter the device-authenticity
   (anti-counterfeit) path.
 - It does not prove the ROM bootloader lacks secure boot — that region is outside
-  every OTA image and was not dumped; the claim is bounded by static evidence plus
-  the observed boot of a modified image on one unit.
+  every OTA image and was not dumped. Evidence is limited to the inspected
+  application OTA path and owner-reported update success on one unit, without
+  readback of the modified byte.
 - It does not claim the factory console is reachable over the air.
 - It does not claim any result holds for another unit, region, or firmware build.
 
