@@ -1,0 +1,21 @@
+item,analyzed_build,build_2.9.0,kind,note
+OTA command handler,0x2C0918BC,0x2C0918EC,function,size 0x622 in both; decompiles identically
+OTA-state gate,0x2C0905E4,0x2C0905FC,function,returns true iff state var in {2,4}
+gate state var,0x20026BA0,0x20026BC8,ram,+0x28 shift
+CRC-32 function,0x2C0CE944,0x2C0CF480,function,table-driven CRC-32
+CRC-32 table,0x2C0F5218,0x2C0F5BC0,data,lookup table
+image-size var,0x2002739C,0x200273C4,ram,set by startOTA (+0x28)
+expected-CRC var,0x200273AC,0x200273D4,ram,set by startOTA (+0x28)
+running-CRC var,0x200273B0,0x200273D8,ram,segment CRC accumulator (+0x28)
+config-CRC var,0x20027418,0x20027440,ram,config CRC compare (+0x28)
+activation flag,0x200274F4,0x2002751C,ram,set by imageOverwriteConfirm (+0x28)
+retry counter,0x20011DF8,0x20011DF8,ram,unchanged
+status var,0x2002392C,0x2002394A,ram,OTA response status
+factory command table,0x2C0F10B0,0x2C0F1A18,data,59 vs 54 contiguous entries
+CIDR handler,0x2C068EED,0x2C068F01,function,example factory handler
+communication_server thread entry,UNRESOLVED,0x2C094750,function,UART engineering task
+build-config blob,0x2C0F899C,0x2C0F931C,string,
+plaese-check-config-len string,0x2C0E1901,0x2C0E2268,string,
+CRC32_OF_IMAGE= prefix,0x2C0E18EF,0x2C0E2256,string,
+RTX V5.5.1,0x2C01FA60,0x2C01FA60,string,shared (identical early code)
+HARMAN build id,0x2C03487B,0x2C03487B,string,shared (identical early code)

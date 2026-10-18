@@ -28,7 +28,9 @@ app-side trust configuration, and a reproducible owner-device delivery method.
 - The RAM map is limited to OTA-path variables (`ram_state_vars.csv`).
 - The factory console is inventoried but its over-the-air reachability is open.
 - The exact top of the OTA staging region is inferred, not read from a table.
-- Function addresses are anchored on the analyzed build, not the 2.9.0 build.
+- Function addresses are provided for **both** builds and mapped one-to-one in
+  `generated/cross_build_map.csv`; the OTA handler/gate/CRC were re-confirmed
+  identical in a direct 2.9.0 analysis.
 
 ## What is unresolved
 

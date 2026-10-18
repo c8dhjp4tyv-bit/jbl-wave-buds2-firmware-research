@@ -42,17 +42,26 @@ procedure. Decompressed image base `0x2C010000`; package layout in
 
 | Item | Value |
 |---|---|
-| Factory table | `0x2C0F1A18` (decompressed offset `0xE1A18`), 54 contiguous entries |
-| `CIDR` handler | `0x2C068F01` (vs analyzed-build `0x2C068EED`) |
-| `RTX V5.5.1` | decompressed offset `0xFA60` (shared with analyzed build) |
-| Container trailer | file offset `0x8629C`, `CRC32_OF_IMAGE=0xA0C7CCEC` |
-| CRC input range | `[0x0, 0x862AD)` |
+| OTA command handler | `0x2C0918EC` (size 0x622; identical decompile to the analyzed build) |
+| OTA-state gate | `0x2C0905FC` (`MEMORY[0x20026BC8] ∈ {2,4}`) |
+| CRC-32 function / table | `0x2C0CF480` / `0x2C0F5BC0` |
+| OTA RAM vars | image size `0x200273C4`, expected CRC `0x200273D4`, running CRC `0x200273D8`, config CRC `0x20027440`, activation flag `0x2002751C` (analyzed values `+0x28`) |
+| Factory table | `0x2C0F1A18` (offset `0xE1A18`), 54 contiguous entries; `CIDR` handler `0x2C068F01` |
+| `communication_server` thread entry | `0x2C094750` (UART engineering task) |
+| Build config / RTX / HARMAN id | `0x2C0F931C` / `0x2C01FA60` / `0x2C03487B` |
+| Container trailer | file offset `0x8629C`, `CRC32_OF_IMAGE=0xA0C7CCEC`, CRC input `[0x0, 0x862AD)` |
 
-Full current factory addresses are in `generated/factory_command_table.csv`.
+The 2.9.0 image was analyzed directly in IDA (an ARM ELF wrap of the decompressed
+image; 8,126 functions). The OTA handler, gate, and CRC routine were located by
+string xref and **decompile identically** to the analyzed build — the subsystem
+is build-invariant. The full one-to-one correspondence is in
+[`generated/cross_build_map.csv`](generated/cross_build_map.csv); current factory
+entries are in `generated/factory_command_table.csv`.
 
 ## Rule
 
-If you reproduce a function-level address, do it against the **analyzed build**;
-if you reproduce a container/CRC/factory-table value, do it against the **2.9.0
-package**. A function VA from this ledger will not land on the same function in a
-different build.
+Each build's addresses are listed above and mapped one-to-one in
+[`generated/cross_build_map.csv`](generated/cross_build_map.csv). A function VA
+from one build does not land on the same function in the other — use the column
+for the build you are reproducing against. The code shift is per-function
+(recompilation); the OTA RAM region shifted by a uniform `+0x28`.

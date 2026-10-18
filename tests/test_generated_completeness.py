@@ -15,6 +15,7 @@ CSVS = [
     "ram_state_vars.csv",
     "string_anchors.csv",
     "crc_test_vectors.csv",
+    "cross_build_map.csv",
 ]
 
 

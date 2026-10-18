@@ -75,8 +75,10 @@ This console can read and write device identity (MAC/BLE address), radio
 calibration (crystal trim) and the BT link key, so how it can be reached matters.
 The evidence gathered here bounds but does not close the question:
 
-- The documented entry point is UART — a `communication_server` thread and the
-  `UARTCMD` bridge.
+- The documented entry point is UART — a `communication_server` thread (2.9.0
+  entry `0x2C094750`) and the `UARTCMD` bridge. In both builds the `AT+TEST=`
+  strings are referenced only via data tables tied to that task, not from the
+  wireless command path.
 - The dispatch table (`0x2C0F10B0`) and the `UARTCMD` handler (`sub_2C067E0C`)
   have **no direct code cross-references** in IDA; they are reached via a computed
   table base, so the feeding path is not resolved by cross-reference alone.

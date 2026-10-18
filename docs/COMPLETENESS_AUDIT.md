@@ -32,7 +32,7 @@ evidence was invented.
 | Factory/engineering console inventory | `factory_command_table.csv`, `docs/10` | **Complete** as a name/handler inventory; **over-the-air reachability `UNRESOLVED`** |
 | OTA RAM state variables | `ram_state_vars.csv` | **Partial**; OTA-path variables evidenced from the handler; the broader RAM map is `UNRESOLVED` |
 | Flash / partition map | `docs/01` from the embedded build-config blob | **Complete** for partition boundaries; the exact staging-region top is inferred from the copy base |
-| Cross-build provenance | `PROVENANCE.md`, `ADDRESS_LEDGER.md`, differential | **Complete** as accounting; re-anchoring function VAs onto the 2.9.0 build is `UNRESOLVED` |
+| Cross-build provenance + re-anchoring | `PROVENANCE.md`, `ADDRESS_LEDGER.md`, `cross_build_map.csv` | **Complete**; the 2.9.0 image was analyzed directly (ELF wrap, 8,126 functions) and the OTA handler/gate/CRC re-anchored — they decompile identically to the analyzed build |
 | Second-tool cross-check | — | `UNRESOLVED`; Ghidra was not run for this release |
 | Dynamic validation | `HARDWARE` observations (official + one-byte-modified flash both succeeded) | **Partial**; owner-observed on a single unit; no UART/SWD capture |
 | AI / evidence provenance | `PROVENANCE.md` | **Complete** |

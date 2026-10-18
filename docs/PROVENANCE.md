@@ -28,14 +28,18 @@ the analyzed image is an owner-held dump of an earlier build.
 - **Shared early code.** The `RTX V5.5.1` string is at decompressed offset
   `0xFA60` in both builds; the static product id
   `HARMAN+JBL_WAVE_BUDS2+20240516+V1.0.4` is at `0x2487B` in both.
-- **Relocated/recompiled later code.** At the analyzed-build VAs, the 2.9.0 image
-  holds different bytes: the OTA handler (`0x2C0918BC`), the OTA-state gate
-  (`0x2C0905E4`), and the CRC-32 routine (`0x2C0CE944`) all differ, so these
-  functions moved between builds.
-- **Factory table.** Analyzed build: 59 entries at `0x2C0F10B0` (e.g. `CIDR`
-  handler `0x2C068EED`). 2.9.0 build: 54 contiguous entries at `0x2C0F1A18`
-  (`CIDR` handler `0x2C068F01`). Command names are stable; addresses and counts
-  are not.
+- **Relocated but structurally identical.** The 2.9.0 decompressed image was
+  analyzed directly in IDA (an ARM ELF wrap of the image; 8,126 functions).
+  Located by string xref, the OTA handler (`0x2C0918BC` → `0x2C0918EC`), the
+  OTA-state gate (`0x2C0905E4` → `0x2C0905FC`), and the CRC-32 routine
+  (`0x2C0CE944` → `0x2C0CF480`) **decompile identically** — same opcode dispatch,
+  same CRC-only logic, same `"BEST"` magic. The code shift is per-function
+  (recompilation); the OTA RAM region shifted by a uniform `+0x28` (e.g. the gate
+  state var `0x20026BA0` → `0x20026BC8`). The full one-to-one correspondence is in
+  [`generated/cross_build_map.csv`](generated/cross_build_map.csv).
+- **Factory table.** Analyzed build: 59 entries at `0x2C0F10B0` (`CIDR` handler
+  `0x2C068EED`). 2.9.0 build: 54 contiguous entries at `0x2C0F1A18` (`CIDR` handler
+  `0x2C068F01`). Command names are stable; addresses and counts are not.
 - **Three version namespaces.** The OTA release label (`2.9.0`), the build
   date/revision (differs per build), and the static product id (`V1.0.4`,
   constant) are independent. This is why the BLE `DeviceInfo` version readback
@@ -51,7 +55,7 @@ builds. Exact addresses are build-specific and ledgered in
 
 | Label | Meaning |
 |---|---|
-| `STATIC_IDA` | IDA disassembly / decompilation / xref evidence on the analyzed build |
+| `STATIC_IDA` | IDA disassembly / decompilation / xref evidence (analyzed build; key OTA functions re-confirmed in a direct 2.9.0 ELF analysis) |
 | `STATIC_RAW` | independent byte/format parser in `tools/` (container, CRC, factory table), run on the 2.9.0 package |
 | `HARDWARE` | owner-observed behavior on the author's unit |
 | `UNRESOLVED` | required evidence is absent; no guess is substituted |
@@ -75,10 +79,10 @@ reproduction.
 - UART / SWD access to the BES1306 and a dump of the ROM / secondary bootloader
   (`0x000000`–`0x010000`), the one region outside every OTA image.
 - Whether the factory/engineering console is reachable over the wireless command
-  channel (see [10-factory-console.md](10-factory-console.md)).
-- A second-tool (e.g. Ghidra) cross-check of function starts on the analyzed
-  build.
-- Re-anchoring the OTA function addresses onto the 2.9.0 build by analyzing its
-  decompressed image directly.
+  channel. In both builds its strings are reached only via data tables tied to the
+  UART `communication_server` task (2.9.0 entry `0x2C094750`); no wireless path was
+  found, but UART/SWD confirmation would close it (see
+  [10-factory-console.md](10-factory-console.md)).
+- A second-tool (e.g. Ghidra) cross-check of function starts.
 
 Until supplied, the affected fields remain `UNRESOLVED`.

@@ -72,6 +72,20 @@ plain IDA action (open, survey, decompile, xrefs, read bytes, string search).
   versus 59 entries at `0x2C0F10B0` with `CIDR` handler `0x2C068EED` in the
   analyzed build.
 
+## Direct 2.9.0 analysis (re-anchoring)
+
+- Wrapped the decompressed 2.9.0 image in a minimal ARM ELF (base `0x2C010000`,
+  Thumb entry) and opened it in IDA → 8,126 functions, image `0xE94CC` (955,596
+  bytes), `BUILD_DATE=Sep 18 2026`, `REV_INFO=d5567b8-dirty`.
+- `xrefs_to "plaese check config len"` (`0x2C0E2268`) → OTA handler `sub_2C0918EC`
+  (0x622); its decompile is identical to the analyzed build.
+- From the handler: CRC routine `sub_2C0CF480` (table `0x2C0F5BC0`), gate
+  `sub_2C0905FC` (`MEMORY[0x20026BC8] ∈ {2,4}`), OTA RAM vars at the analyzed
+  values `+0x28`. Full map in `docs/generated/cross_build_map.csv`.
+- `communication_server` task descriptor at `0x2C0F3CD8` → thread entry
+  `0x2C094750`; the `AT+TEST=` strings are referenced only via data tables, with
+  no wireless path.
+
 ## Enumeration note
 
 The MCP listing calls (`list_funcs`, `func_profile`) cap output at a few rows, so

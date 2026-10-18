@@ -18,6 +18,7 @@ builds (see [two-build provenance](../PROVENANCE.md)):
 | `ota_container_layout.csv` | 8 | 2.9.0 | per-LZMA-stream file offset, compressed/decompressed size, image offset | `inventory_ota_container.py` |
 | `factory_command_table.csv` | 54 | 2.9.0 | factory/engineering command entries located structurally (command, handler VA, name VA) | `extract_factory_table.py` |
 | `crc_test_vectors.csv` | 2 | 2.9.0 | CRC-32 recipe test vectors | `crc_check.py` |
+| `cross_build_map.csv` | 20 | both | one-to-one address map between the analyzed and 2.9.0 builds | two IDA analyses (see command log) |
 | `analyzed_functions.csv` | 15 | analyzed | reverse-engineered functions with role, evidence class, confidence | manual (IDA; see command log) |
 | `ram_state_vars.csv` | 12 | analyzed | OTA RAM state variables and the handler case that sets each | manual (IDA) |
 | `string_anchors.csv` | 13 | analyzed | key string/table anchors with VAs | manual (IDA) |

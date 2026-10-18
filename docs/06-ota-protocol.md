@@ -62,6 +62,9 @@ is no hash or signature — consistent with [04](04-security-model.md).
 The integrity primitive throughout is `sub_2C0CE944`, a table-driven CRC-32
 (table at `0x2C0F5218`). No signature or hash appears anywhere in the handler —
 device-side confirmation of the security model in [04](04-security-model.md).
+In the 2.9.0 build the same handler is `sub_2C0918EC` and the CRC routine
+`sub_2C0CF480` (table `0x2C0F5BC0`), with identical logic — see
+[`generated/cross_build_map.csv`](generated/cross_build_map.csv).
 
 ## The acceptance gate (why an external central stalls)
 

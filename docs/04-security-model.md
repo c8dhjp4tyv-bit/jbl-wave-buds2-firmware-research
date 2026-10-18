@@ -53,6 +53,11 @@ No signature or hash verification appears anywhere in the handler — only CRC-3
 and a magic constant. This confirms the "no image signing" finding from the
 device side, independently of the app-side analysis and the empirical boot test.
 
+The same handler, gate, and CRC routine were re-confirmed by a direct IDA
+analysis of the **2.9.0** build (`sub_2C0918EC` / `sub_2C0905FC` / `sub_2C0CF480`),
+where they decompile identically. The finding is build-invariant; see
+[PROVENANCE.md](PROVENANCE.md) and [`generated/cross_build_map.csv`](generated/cross_build_map.csv).
+
 ## Secure boot
 
 BES1306 is a Cortex-M33 with TrustZone-M (the `SecureFault` handler confirms the
