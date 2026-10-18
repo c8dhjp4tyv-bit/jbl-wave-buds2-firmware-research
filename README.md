@@ -66,8 +66,9 @@ Addresses are from the analyzed build (`wavebuds.elf`); see the
 ## Tested modification
 
 The modification is intentionally minimal — one byte of the decompressed image.
-It changes the RTX kernel string `RTX V5.5.1` → `V5.5.2` at decompressed offset
-`64096`, and the container CRC-32 is recomputed. It is cosmetic by design: the
+The `RTX V5.5.1` marker starts at decompressed offset `64096`; its final digit
+was changed at offset `64105` (`0xFA69`) to produce `V5.5.2`, and the container
+CRC-32 was recomputed. It is cosmetic by design: the
 point is to test the delivery of a modified-but-CRC-valid image without changing
 behavior. The owner reported success and normal operation, but the modified
 marker was not read back; see [the validation boundary](docs/VALIDATION.md#hardware-validation-boundary).
