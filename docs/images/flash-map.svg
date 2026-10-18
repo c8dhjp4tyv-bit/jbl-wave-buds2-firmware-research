@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="440" viewBox="0 0 760 440" font-family="-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+  <rect x="0" y="0" width="760" height="440" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+  <text x="32" y="40" font-size="19" font-weight="700" fill="#111827">JBL Wave Buds 2 — 2 MB NOR flash map</text>
+  <text x="32" y="60" font-size="12.5" fill="#6b7280">BES1306 · FLASH_BASE 0x2C000000 (cached) / 0x28000000 (non-cached) · from the embedded build config</text>
+
+  <!-- bar -->
+  <g>
+    <rect x="40" y="86" width="250" height="42" fill="#fee2e2" stroke="#ef4444"/>
+    <rect x="40" y="128" width="250" height="150" fill="#dbeafe" stroke="#3b82f6"/>
+    <rect x="40" y="278" width="250" height="78" fill="#dcfce7" stroke="#22c55e"/>
+    <rect x="40" y="356" width="250" height="54" fill="#f3f4f6" stroke="#9ca3af"/>
+  </g>
+
+  <!-- labels -->
+  <g font-size="13" fill="#111827">
+    <text x="310" y="104" font-weight="700">bootloader / sec_boot + vectors</text>
+    <text x="310" y="121" fill="#b91c1c" font-size="12">0x000000–0x010000 · 64 KiB · NOT in OTA images (ROM-level, not dumped)</text>
+
+    <text x="310" y="196" font-weight="700">application code (XIP)</text>
+    <text x="310" y="213" fill="#6b7280" font-size="12">0x010000–0x120000 · ~1.06 MiB · OTA_CODE_OFFSET = 0x10000</text>
+
+    <text x="310" y="312" font-weight="700">OTA staging</text>
+    <text x="310" y="329" fill="#15803d" font-size="12">0x120000–~0x1B8000 · new image written here; running app untouched</text>
+
+    <text x="310" y="379" font-weight="700">NV / factory</text>
+    <text x="310" y="396" fill="#6b7280" font-size="12">userdata 0x1EC000 · ANC 0x1EE000 (0x10000) · factory 0x1FF000</text>
+  </g>
+
+  <text x="32" y="430" font-size="11.5" fill="#9ca3af">Download writes to staging (brick-safe); the post-reboot activation copy is the risk window. See docs/01, docs/04.</text>
+</svg>

@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="560" viewBox="0 0 760 560" font-family="-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+  <rect x="0" y="0" width="760" height="560" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+  <text x="32" y="38" font-size="19" font-weight="700" fill="#111827">OTA command sequence</text>
+  <text x="32" y="58" font-size="12.5" fill="#6b7280">device handler 0x2C0918BC — every integrity check is CRC-32 (0x2C0CE944); "BEST" = 0x54534542</text>
+
+  <defs><marker id="d" markerWidth="9" markerHeight="9" refX="4" refY="7" orient="auto"><path d="M0,0 L8,0 L4,7 z" fill="#9ca3af"/></marker></defs>
+
+  <!-- precondition -->
+  <rect x="80" y="76" width="320" height="38" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+  <text x="96" y="100" font-size="12.5" fill="#92400e">precondition — accept gate: MEMORY[0x20026BA0] ∈ {2,4}</text>
+
+  <g font-size="12.5">
+    <!-- steps -->
+    <rect x="80" y="130" width="320" height="34" rx="8" fill="#eff6ff" stroke="#3b82f6"/>
+    <text x="96" y="152" fill="#111827">getProtocolVersion 0x99 · getCurrentVersion 0x8E</text>
+
+    <rect x="80" y="180" width="320" height="34" rx="8" fill="#eff6ff" stroke="#3b82f6"/>
+    <text x="96" y="202" fill="#111827">setOtaUser 0x97 · setUpgradeType 0x9D · selectSide 0x90</text>
+
+    <rect x="80" y="230" width="320" height="34" rx="8" fill="#eff6ff" stroke="#3b82f6"/>
+    <text x="96" y="252" fill="#111827">checkBreakPoint 0x8C</text>
+
+    <rect x="80" y="280" width="320" height="38" rx="8" fill="#e0e7ff" stroke="#4f46e5"/>
+    <text x="96" y="303" fill="#111827" font-weight="600">OTAConfigure 0x86</text>
+
+    <rect x="80" y="334" width="320" height="38" rx="8" fill="#e0e7ff" stroke="#4f46e5"/>
+    <text x="96" y="357" fill="#111827" font-weight="600">startOTA 0x80</text>
+
+    <rect x="80" y="388" width="320" height="38" rx="8" fill="#dcfce7" stroke="#22c55e"/>
+    <text x="96" y="411" fill="#111827" font-weight="600">data 0x85 + segmentCRC 0x82 (every 16 KiB)</text>
+
+    <rect x="80" y="442" width="320" height="38" rx="8" fill="#e0e7ff" stroke="#4f46e5"/>
+    <text x="96" y="465" fill="#111827" font-weight="600">imageOverwriteConfirm 0x92</text>
+
+    <rect x="80" y="496" width="320" height="34" rx="8" fill="#f3f4f6" stroke="#9ca3af"/>
+    <text x="96" y="518" fill="#111827">reboot / activation copy (staging → application)</text>
+  </g>
+
+  <!-- arrows -->
+  <g stroke="#9ca3af" stroke-width="1.5">
+    <line x1="240" y1="114" x2="240" y2="130" marker-end="url(#d)"/>
+    <line x1="240" y1="164" x2="240" y2="180" marker-end="url(#d)"/>
+    <line x1="240" y1="214" x2="240" y2="230" marker-end="url(#d)"/>
+    <line x1="240" y1="264" x2="240" y2="280" marker-end="url(#d)"/>
+    <line x1="240" y1="318" x2="240" y2="334" marker-end="url(#d)"/>
+    <line x1="240" y1="372" x2="240" y2="388" marker-end="url(#d)"/>
+    <line x1="240" y1="426" x2="240" y2="442" marker-end="url(#d)"/>
+    <line x1="240" y1="480" x2="240" y2="496" marker-end="url(#d)"/>
+  </g>
+
+  <!-- integrity annotations -->
+  <g font-size="11.5" fill="#374151">
+    <text x="420" y="303">CRC-32 over first 88 config bytes</text>
+    <text x="420" y="357">image size + CRC-32 recorded · "BEST"</text>
+    <text x="420" y="411">running CRC-32 vs expected · "BEST"</text>
+    <text x="420" y="465">whole-image CRC-32 ok → set 0x200274F4</text>
+  </g>
+  <g stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 3">
+    <line x1="400" y1="299" x2="418" y2="299"/>
+    <line x1="400" y1="353" x2="418" y2="353"/>
+    <line x1="400" y1="407" x2="418" y2="407"/>
+    <line x1="400" y1="461" x2="418" y2="461"/>
+  </g>
+</svg>

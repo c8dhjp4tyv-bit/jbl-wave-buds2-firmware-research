@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="420" viewBox="0 0 760 420" font-family="-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+  <rect x="0" y="0" width="760" height="420" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+  <text x="32" y="38" font-size="19" font-weight="700" fill="#111827">Trust boundaries</text>
+  <text x="32" y="58" font-size="12.5" fill="#6b7280">What each stage verifies — and where image trust actually rests</text>
+
+  <!-- server -->
+  <rect x="32" y="80" width="200" height="120" rx="8" fill="#f3f4f6" stroke="#9ca3af"/>
+  <text x="48" y="104" font-size="14" font-weight="700" fill="#111827">JBL OTA server</text>
+  <text x="48" y="126" font-size="12" fill="#374151">ota_config.json + image</text>
+  <text x="48" y="146" font-size="12" fill="#6b7280">TLS, no app-level pinning</text>
+  <text x="48" y="178" font-size="11.5" fill="#b91c1c">↳ user-CA MITM can read/rewrite</text>
+
+  <!-- phone -->
+  <rect x="280" y="80" width="200" height="120" rx="8" fill="#dbeafe" stroke="#3b82f6"/>
+  <text x="296" y="104" font-size="14" font-weight="700" fill="#111827">Companion app (phone)</text>
+  <text x="296" y="126" font-size="12" fill="#374151">RSA-2048 verifier =</text>
+  <text x="296" y="144" font-size="12" fill="#374151">anti-counterfeit, not signing</text>
+  <text x="296" y="178" font-size="11.5" fill="#1d4ed8">↳ the real image gate (client-side)</text>
+
+  <!-- device -->
+  <rect x="528" y="80" width="200" height="120" rx="8" fill="#dcfce7" stroke="#22c55e"/>
+  <text x="544" y="104" font-size="14" font-weight="700" fill="#111827">Earbuds (BES1306)</text>
+  <text x="544" y="126" font-size="12" fill="#374151">CRC-32 only:</text>
+  <text x="544" y="144" font-size="12" fill="#374151">config / segment / image</text>
+  <text x="544" y="178" font-size="11.5" fill="#15803d">↳ no signature / no hash</text>
+
+  <!-- arrows -->
+  <defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#6b7280"/></marker></defs>
+  <line x1="232" y1="140" x2="278" y2="140" stroke="#6b7280" stroke-width="1.6" marker-end="url(#a)"/>
+  <line x1="480" y1="140" x2="526" y2="140" stroke="#6b7280" stroke-width="1.6" marker-end="url(#a)"/>
+
+  <!-- conclusion -->
+  <rect x="32" y="232" width="696" height="150" rx="8" fill="#fffbeb" stroke="#f59e0b"/>
+  <text x="48" y="258" font-size="14" font-weight="700" fill="#92400e">Net result</text>
+  <text x="48" y="282" font-size="12.5" fill="#374151">• The device accepts any image whose CRC-32 values match — there is no on-device signature backstop.</text>
+  <text x="48" y="304" font-size="12.5" fill="#374151">• The app chooses what to flash from a TLS config with no pinning, and (for this product) no observed config signature.</text>
+  <text x="48" y="326" font-size="12.5" fill="#374151">• Image trust therefore rests entirely on the phone's trust store and the app's own checks — both under the owner's control.</text>
+  <text x="48" y="352" font-size="12" fill="#92400e">Security-relevant: a trusted-CA + MITM position, or a tampered app build, could deliver an arbitrary CRC-valid image.</text>
+  <text x="48" y="372" font-size="11.5" fill="#b45309">ROM secure boot (0x000000–0x010000) not dumped; a modified image did boot on the tested unit. See docs/04, SECURITY.md.</text>
+</svg>

@@ -1,82 +1,149 @@
-# JBL Wave Buds 2 — Firmware & OTA Reverse Engineering
+# JBL Wave Buds 2 — firmware & OTA reverse engineering
 
-Reverse engineering of the JBL Wave Buds 2 (Bestechnic BES1306) firmware and
-over-the-air update path: the on-flash layout, the OTA container format down to
-the byte, the BLE/GATT command protocol and the BES "TOTA v2" encrypted
-transport, the device- and app-side trust boundaries, and a reproducible method
-for loading a self-built firmware image onto a unit you own.
+[![Tests](https://github.com/c8dhjp4tyv-bit/jbl-wave-buds2-firmware-research/actions/workflows/tests.yml/badge.svg)](https://github.com/c8dhjp4tyv-bit/jbl-wave-buds2-firmware-research/actions/workflows/tests.yml)
 
-I could find no prior public teardown of this specific model; corrections and
-additions are welcome.
+Reverse-engineering notes and reproducible tooling for the JBL Wave Buds 2
+(Bestechnic **BES1306**, PID `2100`): the on-flash layout, the OTA container
+format down to the byte, the BLE/GATT command protocol and the BES "TOTA v2"
+encrypted transport, the device- and app-side trust boundaries, the factory
+console, and a reproducible method for loading a self-built image onto a unit you
+own.
 
-## What this is — and isn't
+The analysis spans two builds — the IDA-analyzed `wavebuds.elf` (Apr 2025) and
+the distribution package `2.9.0` (Sep 2026) — a fully specified 8-stream OTA
+container (verified by byte-identical repack), the CRC-32 integrity model
+confirmed on both the app and device sides, a 54/59-entry factory command table,
+12 OTA RAM state variables, a 7,960-function enumeration, and a cross-build
+differential. Semantic recovery is deep for the OTA/flash/CRC/factory subsystems
+and enumeration-only elsewhere — see the [completeness audit](docs/COMPLETENESS_AUDIT.md).
 
-- It **is** original documentation, analysis, and tooling, with every format
-  claim checked by a parser that round-trips the official package byte-for-byte.
-- It **does not** redistribute any JBL/Harman firmware binary, decompiled image,
-  or application code. The tools operate on artifacts you obtain from your own
-  device and from JBL's public server.
-- All work was done on the author's own hardware. See
-  [SECURITY.md](SECURITY.md) for the disclosure position.
+> [!WARNING]
+> This is owner-performed hardware research, not an official JBL update. Flashing
+> a modified image is irreversible: the download phase is staged and brick-safe,
+> but activation of a CRC-valid-but-broken image has **no exposed recovery path**.
+> Read [SAFETY.md](SAFETY.md) before reproducing anything.
 
-## Key findings
+Türkçe sürüm: [README.tr.md](README.tr.md)
 
-| # | Finding |
-|---|---|
-| 1 | The OTA image is **not cryptographically signed** — integrity is CRC-32 only. A CRC-valid image with one modified byte was accepted and booted. |
-| 2 | The app's RSA-2048 verifier is **anti-counterfeit** (device authenticity), not firmware signing. |
-| 3 | The companion app does **not pin** its OTA endpoints; a user CA is enough to intercept OTA traffic. |
-| 4 | OTA is **staged** — the download phase is brick-safe; the risk window is post-reboot activation. |
-| 5 | An external BLE central **cannot drive** OTA: the device accept path is gated on an internal TWS/connection state. |
-| 6 | The BES TOTA v2 transport uses a **client-derived AES-128 session key** — no server/device secret. |
+![The tested JBL Wave Buds 2 in the companion app: both earbuds connected at 100%, all controls live](docs/images/device-after-flash.png)
 
-Details and evidence are in [`docs/`](docs/).
+*Hardware result on the tested unit: after the app + user-CA MITM OTA pipeline was
+validated, both earbuds connect, report 100%, and every app control (ANC/Ambient,
+gestures, EQ) works. The one-byte-modified image was accepted the same way and
+the device stayed fully functional.*
 
-## Documentation
+## Confirmed findings
+
+Addresses are from the analyzed build (`wavebuds.elf`); see the
+[address ledger](docs/ADDRESS_LEDGER.md) and [provenance](docs/PROVENANCE.md).
+
+- The OTA image is **not cryptographically signed**. Device-side integrity is
+  CRC-32 only — the handler `0x2C0918BC` checks config, each segment, and the
+  whole image with the CRC-32 routine `0x2C0CE944` (table `0x2C0F5218`) plus a
+  `"BEST"` magic. A CRC-valid image with one modified byte was accepted and
+  booted.
+- The app's RSA-2048 verifier (`com.jbl.counterfeit.Rsa2048DynamicVerifier`) is
+  **anti-counterfeit** (device authenticity), not firmware signing.
+- The app does **not pin** its OTA endpoints; a user-installed CA is enough to
+  intercept and rewrite the OTA config.
+- OTA is **staged**: the new image is copied to flash base `0x28120000` while the
+  running application is untouched, so the download phase is brick-safe.
+- An external BLE central **cannot drive** OTA: the handlers are gated on an
+  internal TWS/connection state (`0x2C0905E4`: `MEMORY[0x20026BA0] ∈ {2,4}`).
+- The BES **TOTA v2** transport derives its AES-128 session key entirely
+  client-side; there is no server/device secret.
+- A **factory/engineering console** (59 commands in the analyzed build, 54 in
+  2.9.0) can read/write device identity (MAC/BLE address), crystal trim, and the
+  BT link key. Its over-the-air reachability is `UNRESOLVED`.
+- The two builds are **separately compiled and relocated**: same product, shifted
+  addresses, 59 → 54 factory entries. See the [differential](docs/PROVENANCE.md).
+
+## Tested modification
+
+The modification is intentionally minimal — one byte of the decompressed image.
+It changes the RTX kernel string `RTX V5.5.1` → `V5.5.2` at decompressed offset
+`64096`, and the container CRC-32 is recomputed. It is cosmetic by design: the
+point is to prove the device accepts a modified-but-CRC-valid image, not to
+change behavior.
+
+```text
+Base (owner-supplied; not redistributed)
+  official 2.9.0 package   549,558 bytes   SHA-256 836cb251f9fb2261dde14f39ba18d358c48018817f3c3d1b527e1ac5f3ab7ba2
+  decompressed image       955,596 bytes   SHA-256 489663e80b76f20f4c94671064908569fac5f4e3df10ab6d7369baffe094f67d
+  container CRC-32          A0C7CCEC (valid), input range [0x0, 0x862AD)
+```
+
+The repository intentionally contains **no JBL firmware**. Supply your own
+legally obtained package and reproduce:
+
+```bash
+python3 tools/ota_unpack.py  <official_2.9.0_package.bin> --extract image.bin
+python3 tools/ota_repack.py  make-test <official_2.9.0_package.bin> test.bin
+python3 tools/ota_unpack.py  test.bin      # exactly one decompressed byte differs; CRC valid
+```
+
+The repacked container's exact bytes depend on the LZMA encoder; the device
+verifies **CRC-32, not a package hash** (see [docs/04](docs/04-security-model.md)),
+and the one-byte decompressed diff is deterministic. Delivery through the app is
+in [docs/08](docs/08-delivery-method.md).
+
+## Diagrams
 
 | | |
 |---|---|
-| [00 — Overview](docs/00-overview.md) | device, methodology, findings, scope |
-| [01 — Hardware & flash map](docs/01-hardware-flash-map.md) | BES1306, 2 MB NOR layout |
-| [02 — OTA container format](docs/02-ota-container-format.md) | byte-level format + CRC recipe |
-| [03 — Firmware image layout](docs/03-firmware-image-layout.md) | decompressed image structure |
-| [04 — Security model](docs/04-security-model.md) | what is and isn't verified |
-| [05 — BLE/GATT & commands](docs/05-ble-gatt-and-commands.md) | GATT map, protocol3, TOTA v2 |
-| [06 — OTA protocol](docs/06-ota-protocol.md) | command set, sequence, the accept gate |
-| [07 — App-side analysis](docs/07-app-side-analysis.md) | config path, RSA verifier, no pinning |
-| [08 — Delivery method](docs/08-delivery-method.md) | reproducible owner-device method |
-| [09 — Function catalogue](docs/09-function-catalog.md) | IDA functions by module |
-| [10 — Factory console](docs/10-factory-console.md) | verified 59-command engineering console |
+| [Flash map](docs/images/flash-map.svg) | 2 MB NOR partitioning |
+| [OTA command flow](docs/images/ota-flow.svg) | the sequence and its CRC-32 checkpoints |
+| [Trust boundaries](docs/images/trust-boundaries.svg) | what each stage verifies, and where image trust rests |
 
-## Tools
+## Documentation
 
-Format tooling that operates on **your own** copy of the official package:
+- [00 — Overview](docs/00-overview.md)
+- [01 — Hardware & flash map](docs/01-hardware-flash-map.md)
+- [02 — OTA container format](docs/02-ota-container-format.md)
+- [03 — Firmware image layout](docs/03-firmware-image-layout.md)
+- [04 — Security model](docs/04-security-model.md)
+- [05 — BLE/GATT & commands](docs/05-ble-gatt-and-commands.md)
+- [06 — OTA protocol](docs/06-ota-protocol.md)
+- [07 — App-side analysis](docs/07-app-side-analysis.md)
+- [08 — Delivery method](docs/08-delivery-method.md)
+- [09 — Function catalogue](docs/09-function-catalog.md)
+- [10 — Factory console](docs/10-factory-console.md)
+- [Provenance (two builds, evidence classes)](docs/PROVENANCE.md) · [Address ledger](docs/ADDRESS_LEDGER.md)
+- [Completeness audit](docs/COMPLETENESS_AUDIT.md) · [Coverage & limitations](docs/COVERAGE_AND_LIMITATIONS.md)
+- [State machines](docs/STATE_MACHINES.md) · [Incidents](docs/INCIDENTS.md)
+- [Tools & scope](docs/TOOLS.md) · [Testing & reproducibility](docs/VALIDATION.md)
+- [Generated catalogs](docs/generated/README.md) · [IDA command log](analysis/IDA_MCP_COMMAND_LOG.md)
 
-```
-python3 tools/ota_unpack.py  <official_package.bin>          # parse + report
-python3 tools/crc_check.py   <official_package.bin>          # verify the trailer CRC-32
-python3 tools/ota_repack.py  inspect   <official_package.bin>
-python3 tools/ota_repack.py  make-test <official_package.bin> <out.bin>
-```
+## What this project does not claim
 
-See [docs/08-delivery-method.md](docs/08-delivery-method.md) for the full method
-(app patch + config interception) and [`tools/`](tools/) for the capture add-on
-and build helper.
+- It does not redistribute JBL firmware, the app (original or modified), or a
+  ready-to-flash custom image.
+- It does not touch the device-authenticity (anti-counterfeit) path.
+- It does not prove the ROM bootloader lacks secure boot — that region is outside
+  every OTA image and was not dumped; the claim is bounded by static evidence plus
+  the observed boot of a modified image on one unit.
+- It does not claim the factory console is reachable over the air.
+- It does not claim any result holds for another unit, region, or firmware build.
 
-## Environment
+## Contributing, security, and citation
 
-- Static analysis: IDA 9.4 (Hex-Rays), decompressed image at base `0x2C010000`.
-- App: `apktool` / `androguard`.
-- Live device: Linux BlueZ + `bleak`; `mitmproxy` with a user CA.
-
-## Caution
-
-Flashing firmware is irreversible and there is no exposed recovery path. A
-CRC-valid but functionally broken image will still activate. Validate the
-pipeline with the **unmodified** official image first, and only derive images
-from the **current** official package for your unit. You do this at your own risk.
+Contributions must preserve build provenance and ship no firmware; see
+[CONTRIBUTING.md](CONTRIBUTING.md) and [SAFETY.md](SAFETY.md). Security-relevant
+findings follow [SECURITY.md](SECURITY.md). Citation metadata is in
+[CITATION.cff](CITATION.cff); cite the exact commit or tag used.
 
 ## License
 
-Code under [MIT](LICENSE); documentation under CC-BY-4.0. See [LICENSE](LICENSE).
-To cite this work, see [CITATION.cff](CITATION.cff).
+Scripts are [MIT](LICENSE); documentation is CC-BY-4.0. JBL/Harman firmware,
+trademarks, and app assets remain the property of their owners and are not
+redistributed here.
+
+## Star history
+
+<a href="https://www.star-history.com/#c8dhjp4tyv-bit/jbl-wave-buds2-firmware-research&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=c8dhjp4tyv-bit/jbl-wave-buds2-firmware-research&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=c8dhjp4tyv-bit/jbl-wave-buds2-firmware-research&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=c8dhjp4tyv-bit/jbl-wave-buds2-firmware-research&type=Date" />
+ </picture>
+</a>
