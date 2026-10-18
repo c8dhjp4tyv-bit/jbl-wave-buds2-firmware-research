@@ -140,10 +140,12 @@ redistributed here.
 
 ## Star history
 
-<a href="https://www.star-history.com/#c8dhjp4tyv-bit/jbl-wave-buds2-firmware-research&Date">
+## Star History
+
+<a href="https://www.star-history.com/?type=date&repos=c8dhjp4tyv-bit%2Fjbl-wave-buds2-firmware-research">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=c8dhjp4tyv-bit/jbl-wave-buds2-firmware-research&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=c8dhjp4tyv-bit/jbl-wave-buds2-firmware-research&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=c8dhjp4tyv-bit/jbl-wave-buds2-firmware-research&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=c8dhjp4tyv-bit/jbl-wave-buds2-firmware-research&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=c8dhjp4tyv-bit/jbl-wave-buds2-firmware-research&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=c8dhjp4tyv-bit/jbl-wave-buds2-firmware-research&type=date&legend=top-left" />
  </picture>
 </a>
