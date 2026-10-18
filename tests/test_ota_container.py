@@ -41,9 +41,12 @@ class ContainerTests(unittest.TestCase):
         path = os.environ.get("WAVEBUDS_PACKAGE")
         if not path or not Path(path).is_file():
             self.skipTest("set WAVEBUDS_PACKAGE to verify a real package")
-        info = ota_unpack.parse(Path(path).read_bytes())
+        packed = Path(path).read_bytes()
+        info = ota_unpack.parse(packed)
         self.assertEqual(info["stored_crc"], info["calc_crc"])
         self.assertEqual(info["streams"], 8)
+        header, blocks = ota_repack.parse_blocks(packed)
+        self.assertEqual(ota_repack.pack(header, blocks), packed)
 
 
     @staticmethod
