@@ -1,0 +1,71 @@
+name: Research claim
+description: Submit an address, structure, protocol detail, or reverse-engineering result
+title: "[research] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A string is a lead, not proof. Attribute every address to a build (analyzed `wavebuds.elf` or the 2.9.0 package). Do not attach JBL firmware, the app, or an IDA database containing firmware bytes.
+  - type: input
+    id: product
+    attributes:
+      label: Product
+      placeholder: JBL Wave Buds 2 (PID 2100)
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Firmware build
+      description: OTA release label and/or BUILD_DATE+REV_INFO, and which build your address is from.
+    validations:
+      required: true
+  - type: input
+    id: hash
+    attributes:
+      label: Image SHA-256
+      description: SHA-256 of the package or decompressed image your claim is against.
+    validations:
+      required: true
+  - type: input
+    id: address
+    attributes:
+      label: Address / offset
+      placeholder: VA 0x...; decompressed offset 0x...
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Bytes / disassembly and interpretation
+      description: Keep excerpts minimal — only what supports the claim.
+    validations:
+      required: true
+  - type: textarea
+    id: reachability
+    attributes:
+      label: How the address/path was reached
+      description: Cross-references, call graph, dispatch table, string anchor, or runtime trace.
+    validations:
+      required: true
+  - type: dropdown
+    id: confidence
+    attributes:
+      label: Confidence
+      options:
+        - CONFIRMED
+        - HIGH
+        - LIKELY
+        - UNRESOLVED
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Submission checks
+      options:
+        - label: I did not upload proprietary firmware, the app, or an IDA database with firmware bytes.
+          required: true
+        - label: I separated observed facts from interpretation and attributed addresses to a build.
+          required: true

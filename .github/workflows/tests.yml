@@ -1,0 +1,27 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        optimized: ["normal", "optimized"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v5
+        with:
+          python-version: "3.12"
+      - name: Run tests
+        run: |
+          if [ "${{ matrix.optimized }}" = "optimized" ]; then
+            python -O -m unittest discover -s tests -v
+          else
+            python -m unittest discover -s tests -v
+          fi

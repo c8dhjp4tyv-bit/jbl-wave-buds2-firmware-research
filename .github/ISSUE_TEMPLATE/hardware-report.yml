@@ -1,0 +1,47 @@
+name: Hardware report
+description: Report observed behavior on your own unit
+title: "[hardware] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Owner-performed observations only, on hardware you own. Firmware modification is irreversible and there is no exposed recovery path — see SAFETY.md.
+  - type: input
+    id: unit
+    attributes:
+      label: Unit and region
+      placeholder: JBL Wave Buds 2, PID 2100, region ...
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Firmware version before/after
+      placeholder: app About screen version(s)
+    validations:
+      required: true
+  - type: dropdown
+    id: action
+    attributes:
+      label: What was done
+      options:
+        - Read-only analysis (no flash)
+        - Flashed the unchanged official image
+        - Flashed a self-derived image
+    validations:
+      required: true
+  - type: textarea
+    id: observation
+    attributes:
+      label: Observed result
+      description: What the app/device showed; whether audio, pairing, and app connectivity still work.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: This is my own device and I understand flashing is at my own risk.
+          required: true
