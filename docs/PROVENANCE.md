@@ -57,6 +57,7 @@ builds. Exact addresses are build-specific and ledgered in
 |---|---|
 | `STATIC_IDA` | IDA disassembly / decompilation / xref evidence (analyzed build; key OTA functions re-confirmed in a direct 2.9.0 ELF analysis) |
 | `STATIC_RAW` | independent byte/format parser in `tools/` (container, CRC, factory table), run on the 2.9.0 package |
+| `STATIC_APP` | apktool/smali analysis of the decoded JBL app (no app bytes redistributed) |
 | `HARDWARE` | owner-observed behavior on the author's unit |
 | `UNRESOLVED` | required evidence is absent; no guess is substituted |
 

@@ -9,7 +9,8 @@ self-hosted configuration can be delivered to the app. Static analysis used
 ## OTA configuration flow
 
 - `OTAUtil.getConfigUrl()` builds the configuration URL from the product's Harman
-  storage route and PID; for PID 2100 the observed host/path was
+  storage route and PID (via `getHarmanStorageOTAConfigUrl`, confirmed in the
+  decoded `jbl.stc.com.utils.OTAUtil`); for PID 2100 the observed host/path was
   `https://appstorage.onecloud.harman.com/jbl_headphones/ota/2100/…`.
 - The response model (`RemoteOTAConfig`) exposes: `version`, `downloadUrl`,
   `checkSum`, `localPath`, `otaMode`, `pid`, `whatsNewTitle`, `whatsNewContent`.
@@ -18,10 +19,12 @@ self-hosted configuration can be delivered to the app. Static analysis used
   app_greater_than, whats_new }, case, case_v2, dongle, tone }`.
   Here `bin` is a **filename**; the download URL is reconstructed by the app from
   the storage route + PID, so `bin` must stay intact when the config is modified.
-- `OTAUtil.hasOTAUpdate()` compares device firmware against
-  `only_support_greater_than` only when that field is present; it does not
-  directly compare the live version with the advertised release. The captured
-  config omitted that field.
+- `OTAUtil.hasOTAUpdate()` checks pid equality, then `fwVersion` against
+  `onlySupportGreaterThan` and `appVersion` against `appVerGreaterThan`
+  (diagnostic strings `"hasOTAUpdate error: fwVersion < onlySupportGreaterThan"`
+  and `"... appVersion < appVerGreaterThan"`). It does not directly compare the
+  live version with the advertised release. The captured config omitted
+  `only_support_greater_than`.
 - `OTAFragment.upgradeSuccessful()` builds its success message from the locally
   stored `online_version`. The success banner therefore reflects what the app was
   told to flash, not an independent read of the device version.

@@ -108,6 +108,12 @@ HEAD…TAIL frame.
 `besFunc.func(h)`: take every second byte of the 32-byte SHA-256 → 16-byte
 AES-128 key.
 
+This matches the decoded app class
+`com.harman.bluetooth.ota.spp.utils.sha.besFunc`: `generate_random_algorithm`
+selects one of six ops by `i % 6`, `func1` pads and combines, and `func` takes
+every second byte. The key schedule in [`tools/tota_v2.py`](../tools/tota_v2.py)
+is the app's own algorithm, confirmed from its smali.
+
 ### AES
 
 `AES/CBC/NoPadding`, IV = `00 01 02 … 0f`, plaintext zero-padded to a multiple of
