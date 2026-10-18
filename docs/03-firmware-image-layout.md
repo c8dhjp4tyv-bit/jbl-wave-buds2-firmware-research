@@ -53,8 +53,9 @@ after a confirmed 2.9.0 update: the GATT version triple and the OTA release labe
 are separate namespaces. The user-facing version is the app's About screen, not
 the GATT triple.
 
-This single-byte region (`RTX V5.5.1`, offset 64096) is also the change used to
-test image delivery in [04](04-security-model.md): patching the final byte
-(`1` → `2`) and recomputing the container CRC yields an image that differs from
-the official one in exactly one decompressed byte. The modified marker was not
-read back from the device, so update success alone does not prove its execution.
+The `RTX V5.5.1` marker starts at decompressed offset `64096`; its final digit
+is at `64105` (`0xFA69`). The delivery test in [04](04-security-model.md) changes
+that byte (`1` → `2`) and recomputes the container CRC, yielding an image that
+differs from the official one in exactly one decompressed byte. The modified
+marker was not read back from the device, so update success alone does not prove
+its execution.

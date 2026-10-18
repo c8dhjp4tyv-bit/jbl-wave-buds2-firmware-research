@@ -67,8 +67,9 @@ unexamined bootloader. Exact addresses are build-specific and ledgered in
 
 - The unchanged official 2.9.0 image, delivered through the patched app + a
   user-CA MITM, completed with "Update Successful".
-- A 2.9.0 image modified in exactly one decompressed byte (`RTX V5.5.1` →
-  `V5.5.2` at offset 64096, container CRC recomputed) was delivered the same way;
+- A 2.9.0 image modified in exactly one decompressed byte (the `RTX V5.5.1`
+  marker starts at 64096; its final digit changed at 64105 / `0xFA69` to make
+  `V5.5.2`, with container CRC recomputed) was delivered the same way;
   the app reported "Update Successful", the device rebooted, and it remained
   fully functional (A2DP audio, app connectivity, About showed `v2.9.0`).
 - The read-only BLE `DeviceInfo` version returned `2.0.0` both before and after a

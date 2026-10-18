@@ -76,8 +76,9 @@ observations bound the question:
    byte-for-byte in [02](02-ota-container-format.md), it is LZMA streams plus a
    CRC-32 trailer. This format observation alone does not rule out signed regions
    inside the decompressed image or verification by code outside the OTA image.
-2. A CRC-valid image with a **single modified byte** (an application `.rodata`
-   string, offset 64096; see [03](03-firmware-image-layout.md)) was delivered
+2. A CRC-valid image with a **single modified byte** (the final digit of the
+   application `.rodata` string beginning at offset 64096; changed at 64105 / `0xFA69`,
+   see [03](03-firmware-image-layout.md)) was delivered
    through the app's own OTA path. The device reported the update successful,
    rebooted, and remained fully functional — A2DP audio, app connectivity, and
    the About screen all normal.

@@ -65,8 +65,9 @@ Adresler incelenen yapıdandır (`wavebuds.elf`); bkz.
 ## Test edilen değişiklik
 
 Değişiklik bilinçli olarak minimaldir — sıkıştırması açılmış imajın tek baytı.
-RTX çekirdek metnini `RTX V5.5.1` → `V5.5.2` yapar (imaj içi offset `64096`) ve
-container CRC-32 yeniden hesaplanır. Tasarım gereği kozmetiktir: amaç, davranışı
+`RTX V5.5.1` işareti imaj içi `64096` offset'inde başlar; son rakam `64105`
+(`0xFA69`) offset'inde `2` yapılarak `V5.5.2` elde edilir ve container CRC-32
+yeniden hesaplanır. Tasarım gereği kozmetiktir: amaç, davranışı
 değiştirmeden CRC-geçerli değiştirilmiş bir imajın gönderimini sınamaktır.
 Sahibi güncelleme başarısı ve normal çalışma bildirdi, ancak değiştirilen metin
 geri okunmadı; bkz. [donanım doğrulama sınırı](docs/VALIDATION.md#hardware-validation-boundary).
