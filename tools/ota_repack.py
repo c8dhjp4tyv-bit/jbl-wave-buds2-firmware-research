@@ -20,56 +20,28 @@ from __future__ import annotations
 import argparse
 import hashlib
 import lzma
-import re
+from ota_container import parse as parse_container
 import zlib
 from pathlib import Path
 
 BLOCK_SIZE = 0x20000
-LZMA_HEADER = b"\x5d\x00\x00\x00\x04" + b"\xff" * 8
 CRC_PREFIX = b"CRC32_OF_IMAGE=0x"
 RTX_MARKER = b"RTX V5.5.1"
 LZMA_FILTERS = [{"id": lzma.FILTER_LZMA1, "dict_size": 0x04000000, "lc": 3, "lp": 0, "pb": 2}]
 
 
 def parse_blocks(packed: bytes) -> tuple[bytes, list[bytes]]:
-    trailer = packed.find(CRC_PREFIX)
-    if trailer < 8:
-        raise ValueError("CRC trailer marker not found")
-    if not re.fullmatch(rb"CRC32_OF_IMAGE=0x([0-9A-Fa-f]{8})\n", packed[trailer:]):
-        raise ValueError("unexpected CRC trailer shape")
-    stored = int(packed[trailer + len(CRC_PREFIX): trailer + len(CRC_PREFIX) + 8], 16)
-    if (zlib.crc32(packed[: trailer + len(CRC_PREFIX)]) & 0xFFFFFFFF) != stored:
-        raise ValueError("source container CRC does not validate")
-
-    starts: list[int] = []
-    cursor = 8
-    while True:
-        cursor = packed.find(LZMA_HEADER, cursor, trailer)
-        if cursor < 0:
-            break
-        starts.append(cursor)
-        cursor += len(LZMA_HEADER)
-    if not starts or starts[0] != 8:
-        raise ValueError("first LZMA stream is not at offset 8")
-    ends = starts[1:] + [trailer]
-
-    blocks: list[bytes] = []
-    for index, (start, end) in enumerate(zip(starts, ends)):
-        decoder = lzma.LZMADecompressor(format=lzma.FORMAT_ALONE)
-        chunk = packed[start:end]
-        blocks.append(
-            decoder.decompress(chunk, max_length=BLOCK_SIZE)
-            if index < len(starts) - 1
-            else decoder.decompress(chunk)
-        )
-    if len(blocks) != 8:
-        raise ValueError(f"expected 8 LZMA streams; found {len(blocks)}")
-    return packed[:8], blocks
+    info = parse_container(packed)
+    return info["header"], info["blocks"]
 
 
 def pack(header: bytes, blocks: list[bytes]) -> bytes:
+    if len(header) != 8 or header[:4] != b"\xff" * 4:
+        raise ValueError("expected an 8-byte OTA header with ff ff ff ff magic")
     if len(blocks) != 8 or any(len(b) != BLOCK_SIZE for b in blocks[:-1]):
         raise ValueError("expected 8 blocks, the first seven of 128 KiB")
+    if not 0 < len(blocks[-1]) <= BLOCK_SIZE:
+        raise ValueError("last block must be 1..128 KiB")
     streams = [lzma.compress(b, format=lzma.FORMAT_ALONE, filters=LZMA_FILTERS) for b in blocks]
     for index, (block, stream) in enumerate(zip(blocks, streams)):
         decoder = lzma.LZMADecompressor(format=lzma.FORMAT_ALONE)

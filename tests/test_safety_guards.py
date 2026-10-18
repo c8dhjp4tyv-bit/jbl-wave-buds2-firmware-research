@@ -12,6 +12,10 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tools"))
+
+import ota_repack  # noqa: E402
+
 CRC = ROOT / "tools" / "crc_check.py"
 REPACK = ROOT / "tools" / "ota_repack.py"
 
@@ -40,6 +44,21 @@ class OptimizedModeSafetyTests(unittest.TestCase):
             path = handle.name
         result = self.run_o(str(REPACK), "inspect", path)
         self.assertNotEqual(result.returncode, 0)
+
+
+    def test_repack_rejects_out_of_range_offset_under_optimized(self) -> None:
+        blocks = [b"\x00" * ota_repack.BLOCK_SIZE for _ in range(7)] + [b"Z"]
+        package = ota_repack.pack(b"\xff" * 4 + b"\x00" * 4, blocks)
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "source.bin"
+            target = Path(directory) / "target.bin"
+            source.write_bytes(package)
+            result = self.run_o(
+                str(REPACK), "repack", str(source), str(target),
+                "--set-byte", f"{7 * ota_repack.BLOCK_SIZE + 1}=0",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(target.exists())
 
 
 if __name__ == "__main__":

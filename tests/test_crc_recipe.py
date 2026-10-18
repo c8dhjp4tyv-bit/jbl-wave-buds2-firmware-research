@@ -22,6 +22,12 @@ class CrcRecipeTests(unittest.TestCase):
         self.assertEqual(stored, crc)
         self.assertEqual(cut, len(body))
 
+    def test_prefix_in_payload_does_not_misplace_trailer(self) -> None:
+        body = b"noise-CRC32_OF_IMAGE=0xNOT_A_TRAILER" + crc_check.PREFIX
+        crc = zlib.crc32(body) & 0xFFFFFFFF
+        stored, calculated, _ = crc_check.check(body + f"{crc:08X}\n".encode("ascii"))
+        self.assertEqual(stored, calculated)
+
     def test_detects_mismatch(self) -> None:
         package = b"payload" + crc_check.PREFIX + b"DEADBEEF\n"
         stored, calculated, _ = crc_check.check(package)

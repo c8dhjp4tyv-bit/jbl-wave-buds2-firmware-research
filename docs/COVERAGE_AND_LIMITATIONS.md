@@ -6,9 +6,9 @@
 |---|---|---|
 | OTA container format and CRC recipe | **CONFIRMED** | byte-identical repack; CRC self-test + 2.9.0 vector (`STATIC_RAW`) |
 | OTA image integrity is CRC-32 only, no signature | **CONFIRMED** | handler decompile + string/routine search (`STATIC_IDA`) + modified image booted (`HARDWARE`) |
-| App has no certificate pinning | **CONFIRMED** | zero `okhttp3.CertificatePinner` references in the app's dex; user-CA MITM captured and rewrote config (`STATIC_IDA` + `HARDWARE`) |
+| Tested patched-app OTA flow is not blocked by pinning | **CONFIRMED for tested flow** | no `okhttp3.CertificatePinner` references were found; a user-CA MITM worked after app trust configuration was changed (`STATIC_APP` + `HARDWARE`); other custom pinning paths not exhaustively ruled out |
 | RSA-2048 in the app is anti-counterfeit, not firmware signing | **HIGH** | class/method analysis; no config signature field observed for this product (`STATIC_IDA`) |
-| OTA is staged; download phase is brick-safe | **HIGH** | flash copy base `0x28120000`; running app region untouched (`STATIC_IDA`) |
+| OTA is staged; download-phase application remains intact | **HIGH** | staging at `0x28120000` reduces risk; does not guarantee recovery from a bad activation (`STATIC_IDA`) |
 | External BLE central cannot drive OTA (TWS-state gate) | **HIGH** | gate predicate + 18 call sites; standalone session stalls at config/start (`STATIC_IDA` + `HARDWARE`) |
 | TOTA v2 key schedule is client-derived (no device secret) | **CONFIRMED** | handshake reproduced; device returned "connect success" (`STATIC_IDA` + `HARDWARE`) |
 | Factory console exists with identity/calibration writes | **CONFIRMED** (inventory) | `factory_command_table.csv` (`STATIC_RAW` + `STATIC_IDA`) |

@@ -21,11 +21,12 @@ PREFIX = b"CRC32_OF_IMAGE=0x"
 
 
 def check(packed: bytes) -> tuple[int, int, int]:
-    index = packed.find(PREFIX)
-    if index < 0:
-        raise ValueError("CRC trailer marker not found")
-    match = re.search(rb"CRC32_OF_IMAGE=0x([0-9A-Fa-f]{8})\n", packed[index:])
-    if not match:
+    trailer_length = len(PREFIX) + 9
+    if len(packed) < trailer_length:
+        raise ValueError("missing CRC trailer")
+    index = len(packed) - trailer_length
+    match = re.fullmatch(re.escape(PREFIX) + rb"([0-9A-Fa-f]{8})\n", packed[index:])
+    if match is None:
         raise ValueError("unexpected CRC trailer shape")
     stored = int(match.group(1), 16)
     cut = index + len(PREFIX)

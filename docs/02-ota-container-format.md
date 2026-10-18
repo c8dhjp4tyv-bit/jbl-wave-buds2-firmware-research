@@ -1,10 +1,11 @@
 # 02 — OTA container format
 
 The OTA package (`COMPRESS_WAVE_BUDS2_OTA2_*.bin`) is a sequence of LZMA-"alone"
-streams wrapped by a small header and followed by an ASCII CRC-32 trailer. Every
-claim in this file is checked by [tools/ota_unpack.py](../tools/ota_unpack.py) /
-[tools/ota_repack.py](../tools/ota_repack.py), which round-trip the official
-package byte-for-byte.
+streams wrapped by a small header and followed by an ASCII CRC-32 trailer. The format is exercised by [tools/ota_unpack.py](../tools/ota_unpack.py) /
+[tools/ota_repack.py](../tools/ota_repack.py), which round-trip an owner-supplied
+official package byte-for-byte. The shared
+[parser](../tools/ota_container.py) follows the explicit big-endian compressed
+length fields, bounds decompression, and rejects malformed or extra stream data.
 
 ## Top-level structure
 

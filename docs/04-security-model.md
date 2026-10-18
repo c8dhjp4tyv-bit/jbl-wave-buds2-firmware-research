@@ -8,7 +8,7 @@ evidence for each claim.
 | Boundary | Mechanism | What it actually guarantees |
 |---|---|---|
 | Device authenticity | RSA-2048 in the app (`com.jbl.counterfeit.Rsa2048DynamicVerifier`), `AuthenticateDevice` feature | The earbuds are a genuine Harman product, to the app. **Not** firmware signing. |
-| OTA transport | BES "TOTA v2": AES-128-CBC session, key derived client-side (see [05](05-ble-gatt-and-commands.md)) | Confidentiality/integrity of the BLE link during a session. **Not** authenticity of the image at rest. |
+| OTA transport | BES "TOTA v2": AES-128-CBC session, key derived client-side (see [05](05-ble-gatt-and-commands.md)) | Encrypted BLE session payloads. AES-CBC and CRC do **not** alone provide cryptographic message integrity or authenticate the image. |
 | OTA image integrity | CRC-32 — container trailer (see [02](02-ota-container-format.md)); per-16 KiB segment CRC-32 and a whole-image CRC-32 in the protocol (see [06](06-ota-protocol.md)) | Detects corruption in transit. **Not** tampering. |
 
 ## What is not present
@@ -16,7 +16,7 @@ evidence for each claim.
 - No cryptographic **signature** over the firmware image (no RSA/ECDSA/Ed25519
   verify applied to the image).
 - No image **hash** used for authentication (no SHA-1/SHA-256/MD5/HMAC over the image).
-- No **anti-rollback** / downgrade enforcement in the application image.
+- No **anti-rollback** / downgrade enforcement was identified in the application image; bootloader behavior remains unexamined.
 
 Evidence — an exhaustive string and routine search of the 955,596-byte
 application image (IDA, 7960 functions):
@@ -75,10 +75,11 @@ observations bound the question:
    rebooted, and remained fully functional — A2DP audio, app connectivity, and
    the About screen all normal.
 
-If secure boot were enforced over the application region on this unit, (2) could
-not occur. Conclusion: **on this retail unit there is no effective
-signature or secure-boot check on the application image; integrity rests on
-CRC-32 alone.**
+The one-byte change was reported to install and the device remained functional,
+consistent with no effective authentication of this modified application image.
+However, the updated string was **not independently read back from device flash**;
+ROM/bootloader code has not been dumped. This observation supports, but does not
+independently prove, the complete absence of ROM secure-boot checks.
 
 ## Brick surface
 
@@ -91,13 +92,13 @@ CRC-32 alone.**
   modification is therefore **not** signature rejection but a functionally bad
   image that still passes CRC.
 
-## Where the real gate is
+## Where the observed trust boundary sits
 
-Because the firmware-signing boundary that would normally prevent loading a
-modified image is absent, the only gate left is **app-side**: the companion app
-verifies the OTA *configuration* with RSA-2048 and will only download and flash
-what that configuration authorizes (see [07](07-app-side-analysis.md)). That gate
-runs on the phone, inside the app's trust store — which is the entire basis of
-the delivery method documented in [08](08-delivery-method.md). This is the
-disclosure-relevant finding: image trust is delegated to a client-side config
-check with no on-device signature backstop.
+The tested product's OTA configuration carried no signature field. The decoded
+app includes an RSA-2048 anti-counterfeit verifier, but there is **no evidence**
+that this verifier authenticates the PID 2100 OTA configuration. The tested
+delivery method changes the owner's app network trust configuration so that a
+local proxy can supply a modified configuration and firmware image; it does not
+modify device-authenticity logic. The device-side OTA handler verifies CRC-32,
+not a firmware-publisher signature. See [07](07-app-side-analysis.md) and
+[08](08-delivery-method.md). This result is limited to the tested unit and builds.

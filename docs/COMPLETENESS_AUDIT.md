@@ -41,15 +41,15 @@ evidence was invented.
 
 Semantic recovery is **deep** for the OTA, flash, CRC, delivery, and factory-table
 subsystems and **shallow (enumeration only)** for audio/ANC, codec, and the
-Bluetooth stack. The analyzed `.text` (953,156 bytes) is ~2,440 bytes shorter
-than the 2.9.0 decompressed image (955,596); that is a build difference, not a
-gap within one image — the two are separately compiled (see
+Bluetooth stack. The analyzed `.text` (953,156 bytes) and the 2.9.0 decompressed image
+(955,596 bytes) are different kinds of ranges from separately compiled builds;
+the size difference is not evidence of a missing disassembly range (see
 [PROVENANCE.md](PROVENANCE.md)).
 
 ## External blockers
 
 The `UNRESOLVED` items cannot be closed from the firmware package alone. They
-need a ROM/bootloader dump, UART/SWD capture, direct analysis of the 2.9.0
-decompressed image in a disassembler, and a second-tool cross-check. Until then,
+need a ROM/bootloader dump, UART/SWD capture, and an independent second-tool
+cross-check. Direct IDA analysis of the 2.9.0 image has already been performed. Until then,
 the repository does not claim "every function understood" or "secure boot proven
 absent in the ROM."

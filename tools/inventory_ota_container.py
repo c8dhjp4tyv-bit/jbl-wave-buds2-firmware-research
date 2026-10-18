@@ -12,41 +12,17 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import lzma
-import re
-import zlib
+from ota_container import parse as parse_container
 from pathlib import Path
-
-BLOCK_SIZE = 0x20000
-LZMA_HEADER = b"\x5d\x00\x00\x00\x04" + b"\xff" * 8
-CRC_PREFIX = b"CRC32_OF_IMAGE=0x"
 
 
 def inventory(packed: bytes) -> dict:
-    trailer = packed.find(CRC_PREFIX)
-    match = re.fullmatch(rb"CRC32_OF_IMAGE=0x([0-9A-Fa-f]{8})\n", packed[trailer:])
-    if trailer < 8 or not match:
-        raise ValueError("not a recognized OTA package (missing/!malformed CRC trailer)")
-    stored_crc = int(match.group(1), 16)
-    crc_input_end = trailer + len(CRC_PREFIX)
-    calc_crc = zlib.crc32(packed[:crc_input_end]) & 0xFFFFFFFF
-
-    starts, cursor = [], 8
-    while True:
-        cursor = packed.find(LZMA_HEADER, cursor, trailer)
-        if cursor < 0:
-            break
-        starts.append(cursor)
-        cursor += len(LZMA_HEADER)
-    ends = starts[1:] + [trailer]
-
+    parsed = parse_container(packed)
     streams, image_offset = [], 0
     image_hash = hashlib.sha256()
-    for index, (start, end) in enumerate(zip(starts, ends)):
-        decoder = lzma.LZMADecompressor(format=lzma.FORMAT_ALONE)
-        chunk = packed[start:end]
-        block = decoder.decompress(chunk, max_length=BLOCK_SIZE) if index < len(starts) - 1 else decoder.decompress(chunk)
-        comp = chunk[:-4] if index < len(starts) - 1 else chunk
+    for index, (start, comp, block) in enumerate(
+        zip(parsed["starts"], parsed["compressed"], parsed["blocks"])
+    ):
         image_hash.update(block)
         streams.append({
             "index": index,
@@ -61,15 +37,15 @@ def inventory(packed: bytes) -> dict:
         "packaged_size": len(packed),
         "package_md5": hashlib.md5(packed).hexdigest(),
         "package_sha256": hashlib.sha256(packed).hexdigest(),
-        "header_hex": packed[:8].hex(),
-        "stream_count": len(streams),
+        "header_hex": parsed["header"].hex(),
+        "stream_count": parsed["streams"],
         "decompressed_size": image_offset,
         "image_sha256": image_hash.hexdigest(),
-        "trailer_offset": trailer,
-        "crc_input_end": crc_input_end,
-        "crc_stored": f"{stored_crc:08X}",
-        "crc_computed": f"{calc_crc:08X}",
-        "crc_valid": stored_crc == calc_crc,
+        "trailer_offset": parsed["trailer"],
+        "crc_input_end": parsed["crc_input_end"],
+        "crc_stored": f'{parsed["stored_crc"]:08X}',
+        "crc_computed": f'{parsed["calc_crc"]:08X}',
+        "crc_valid": True,
         "streams": streams,
     }
 

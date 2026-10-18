@@ -32,9 +32,9 @@ self-hosted configuration can be delivered to the app. Static analysis used
 Observed config (PID 2100): `version 2.9.0`, `md5 91cd9ade57c67ddc05ba993c82e1cf53`,
 `bin COMPRESS_WAVE_BUDS2_OTA2_V2.9.0_56e441_20260918.bin`.
 
-## RSA-2048 configuration verifier
+## RSA-2048 anti-counterfeit verifier
 
-The app ships a configuration signature verifier:
+The app ships an RSA-2048 verifier in its anti-counterfeit package:
 
 - Class `com.jbl.counterfeit.Rsa2048DynamicVerifier`, method `verifySignatureLoop()`.
 - Returns `com.jbl.counterfeit.enums.EnumVerifyResult` — an interface with
@@ -56,22 +56,25 @@ traffic.
 ## Transport trust
 
 - A search for `okhttp3.CertificatePinner` across the app's dex found **zero**
-  references — there is no application-level certificate pinning anywhere, for the
-  OTA hosts or otherwise.
+  references. This alone does not exclude every possible custom pinning
+  implementation. No additional pinning blocked the tested patched-app OTA
+  path.
 - `network_security_config.xml` originally trusts `system` anchors only. Adding a
   `<certificates src="user"/>` anchor (a one-line change) makes the app trust a
   user-installed CA; the patched decode confirms exactly this single addition.
 
-Consequently the OTA configuration and download can be intercepted with a user CA
-and a local proxy — no pinning bypass is required. This is the transport-side
+With the **modified app trust configuration**, the OTA configuration and
+download were intercepted using a user CA and a local proxy. Merely installing
+a user CA on the unmodified, system-CA-only app was not shown to work. This is the transport-side
 finding that, combined with the absence of on-device firmware signing
 ([04](04-security-model.md)), makes the delivery method in
 [08](08-delivery-method.md) possible.
 
 ## Summary of the client-side gate
 
-Image trust is delegated entirely to the client: the app decides what to flash
-from a configuration it fetches over TLS, with (for this product) no enforced
-config signature observed and no certificate pinning, and the device applies
-whatever passes CRC. The gate is the phone's trust store and the app's own
-checks — both under the device owner's control.
+The app decides what firmware to request from the OTA configuration it fetches
+over TLS. No config signature field was observed for PID 2100 and the RSA
+anti-counterfeit verifier was **not shown** to gate that configuration. In the
+owner-modified app, network trust was expanded to a user CA and a local proxy
+successfully substituted the OTA responses. The device then applies the image
+subject to its CRC validation; this does not authenticate its publisher.

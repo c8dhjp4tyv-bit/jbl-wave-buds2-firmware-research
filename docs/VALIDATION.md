@@ -4,8 +4,9 @@
 
 The format claims rest on a round-trip guarantee: `ota_repack.py` recompresses
 the official package and refuses to emit anything unless an unchanged repack is
-**byte-identical** to the source. A format-handling error therefore cannot
-silently produce a corrupt image. The CRC recipe is independently checked by
+**byte-identical** to the source. A format-handling error is less likely to
+silently produce a corrupt image; this round-trip property does not prove that
+an arbitrary modified image is safe to flash. The CRC recipe is independently checked by
 `crc_check.py` against both the 2.9.0 container value (`A0C7CCEC`) and a
 synthetic self-test vector.
 
@@ -16,14 +17,16 @@ synthetic self-test vector.
 
 | Test | Checks |
 |---|---|
-| `test_ota_container.py` | round-trip identity, stream count/sizes, CRC validity on a supplied package; synthetic-package fallback when no package is present |
+| `test_ota_container.py` | synthetic round-trip, malformed magic/length/trailer/CRC and oversized-block rejection; optional real-package check (skipped when not supplied) |
 | `test_crc_recipe.py` | the documented CRC-32 recipe and `--selftest` vector |
-| `test_safety_guards.py` | `ota_repack.py` refuses a non-identity source and a bad decompressed-byte offset **under `python -O`** (guards are real checks, not `assert`) |
+| `test_safety_guards.py` | invalid source, bad CRC, and out-of-range decompressed-byte offset fail **under `python -O`** (guards are real checks, not `assert`) |
 | `test_factory_table.py` | the structural locator finds a plausible command table in a synthetic image and resolves names |
 | `test_generated_completeness.py` | every shipped `docs/generated/*.csv` has its header and non-empty rows, and `package_inventory.json` has the required keys |
 
-Safety guards never use `assert`, so they stay active under `python -O`; CI runs
-both modes to prove it.
+Safety guards in the production tools never use `assert`, so they stay active
+under `python -O`; CI runs both modes. Public CI uses synthetic fixtures and
+**does not validate the owner-held official 2.9.0 package** unless provided
+explicitly via `WAVEBUDS_PACKAGE`.
 
 ## Reproducing the generated data
 

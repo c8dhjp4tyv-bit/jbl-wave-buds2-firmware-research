@@ -9,18 +9,20 @@ the JBL Wave Buds 2 (Bestechnic BES1306) update path:
   rests on CRC-32 alone (container trailer plus per-segment and whole-image CRC-32
   in the protocol). A modified-but-CRC-valid image is accepted and booted (see
   [docs/04-security-model.md](docs/04-security-model.md)).
-- The companion app does **not pin** its OTA endpoints, so the OTA configuration
-  and download can be intercepted with a user-installed CA (see
+- In the tested **modified app**, a user-installed CA was trusted and a local
+  proxy could replace OTA traffic. The stock app trusts system CAs only; merely
+  installing a user CA was not shown to compromise the stock OTA flow (see
   [docs/07-app-side-analysis.md](docs/07-app-side-analysis.md)).
 
 ## Impact
 
 For the device owner, this enables legitimate firmware modification. The
-security concern is the combination: an attacker able to (a) get a user CA
-trusted on a victim's phone (e.g. a tampered app build) or (b) hold a
-man-in-the-middle position where the app's transport trust can be subverted,
-could cause the app to deliver an arbitrary firmware image that the device will
-accept because it is only CRC-checked. There is no on-device signature backstop
+security concern is the combination: an attacker would need to compromise the
+app's effective TLS trust boundary (for example, via a system-trusted CA or a
+modified app that trusts their user CA) and control the OTA configuration and
+download responses. Installing a user CA alone was not shown to suffice for the
+unmodified app. In that threat model, device CRC checks do not authenticate the
+firmware publisher. There is no on-device signature backstop
 and no exposed recovery path if a bad image is activated.
 
 ## Scope and ethics

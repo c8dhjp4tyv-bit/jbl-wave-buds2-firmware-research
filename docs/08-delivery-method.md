@@ -3,7 +3,7 @@
 This chapter documents, end to end, how a self-built firmware image is delivered
 to a **device you own** through the companion app's own OTA path. It is the
 practical consequence of three findings: no on-device firmware signing
-([04](04-security-model.md)), no certificate pinning in the app
+([04](04-security-model.md)), no pinning preventing the tested patched-app OTA connection
 ([07](07-app-side-analysis.md)), and a fully understood container format
 ([02](02-ota-container-format.md)).
 
@@ -53,37 +53,30 @@ python3 tools/ota_repack.py make-test <official_current.bin> <custom.bin>
 byte-identical, so a mistake in the format handling cannot silently produce a bad
 image. Record the new MD5 and size.
 
-## Step 3 — Patch the app
+## Step 3 — Patch the app's network trust configuration
 
-The app's client-side checks are what decide whether your config/image is
-accepted. Two edits to your own decoded APK:
+The stock app trusts system CAs only. To run the owner-controlled proxy
+experiment, change **only** the network security configuration of your own APK:
 
-1. **Trust a user CA.** In `res/xml/network_security_config.xml`, add a
-   user-certificates anchor so the app trusts your proxy CA:
+```xml
+<trust-anchors>
+  <certificates src="system"/>
+  <certificates src="user"/>
+</trust-anchors>
+```
 
-   ```xml
-   <trust-anchors>
-     <certificates src="system"/>
-     <certificates src="user"/>
-   </trust-anchors>
-   ```
+The supplied `tools/patch_app.sh` decodes and rebuilds your APK, applies this
+trust-anchor change, signs the resulting APK set with your own key, and aborts if
+the expected network security config is absent. Verify that your APK manifest
+actually references this configuration. It does **not** patch the
+`com.jbl.counterfeit` package or override RSA anti-counterfeit verification:
+no signature field was observed in the PID 2100 OTA config, and no connection
+between the anti-counterfeit verifier and this OTA config was demonstrated.
 
-2. **Neutralize the config verifier (belt-and-suspenders).** In
-   `com.jbl.counterfeit`, make `EnumVerifyResult` report success — i.e. the
-   `PASS` implementation's `isPass()` returns true and `isFail()` returns false —
-   so `Rsa2048DynamicVerifier.verifySignatureLoop()` cannot reject a modified
-   config. (The captured config for PID 2100 carried no signature field, so this
-   may be a no-op for this product; it is included so the method is robust across
-   products that do sign.)
-
-Then rebuild, align, sign, and install. `tools/patch_app.sh` wraps the mechanical
-part (apply the `network_security_config` change, `apktool b`, `zipalign`,
-`apksigner`, `adb install-multiple`); the smali edit in (2) is applied to your
-decoded tree and is documented inline in that script.
-
-> Signing the modified app with your own key requires uninstalling the original
-> (this clears app data). The modified build is for your own device only — do not
-> redistribute JBL's app, modified or not.
+> This broadens the modified app's trust in user CAs. Install a temporary proxy
+> CA only on a phone you control, remove it after testing, and do not use this
+> modified build for normal daily activity. Re-signing also requires uninstalling
+> the official app, clearing its app data. Do not redistribute modified APKs.
 
 ## Step 4 — Install the user CA on the phone
 

@@ -44,10 +44,12 @@ Addresses are from the analyzed build (`wavebuds.elf`); see the
   booted.
 - The app's RSA-2048 verifier (`com.jbl.counterfeit.Rsa2048DynamicVerifier`) is
   **anti-counterfeit** (device authenticity), not firmware signing.
-- The app does **not pin** its OTA endpoints; a user-installed CA is enough to
-  intercept and rewrite the OTA config.
-- OTA is **staged**: the new image is copied to flash base `0x28120000` while the
-  running application is untouched, so the download phase is brick-safe.
+- In the tested **patched-app** OTA flow, certificate pinning did not block the
+  local proxy. The stock app trusts system CAs only; a user-installed CA requires
+  changing the owner's app network security configuration.
+- OTA is **staged**: the new image is written to flash base `0x28120000` while
+  the running application remains intact. This reduces download-phase risk but
+  does not guarantee recovery from a bad update.
 - An external BLE central **cannot drive** OTA: the handlers are gated on an
   internal TWS/connection state (`0x2C0905E4`: `MEMORY[0x20026BA0] ∈ {2,4}`).
 - The BES **TOTA v2** transport derives its AES-128 session key entirely
@@ -118,7 +120,8 @@ in [docs/08](docs/08-delivery-method.md).
 
 - It does not redistribute JBL firmware, the app (original or modified), or a
   ready-to-flash custom image.
-- It does not touch the device-authenticity (anti-counterfeit) path.
+- The documented build helper does not alter the device-authenticity
+  (anti-counterfeit) path.
 - It does not prove the ROM bootloader lacks secure boot — that region is outside
   every OTA image and was not dumped; the claim is bounded by static evidence plus
   the observed boot of a modified image on one unit.
@@ -137,8 +140,6 @@ findings follow [SECURITY.md](SECURITY.md). Citation metadata is in
 Scripts are [MIT](LICENSE); documentation is CC-BY-4.0. JBL/Harman firmware,
 trademarks, and app assets remain the property of their owners and are not
 redistributed here.
-
-## Star history
 
 ## Star History
 

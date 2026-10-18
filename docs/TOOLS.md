@@ -35,8 +35,8 @@ labeled accordingly:
   (`wavebuds.elf`), pinned by hash in [PROVENANCE.md](PROVENANCE.md);
 - a second-tool (Ghidra) cross-check of function starts was not run for this
   release (`UNRESOLVED`);
-- re-anchoring the OTA function addresses onto the 2.9.0 build requires analyzing
-  its decompressed image directly (`UNRESOLVED`);
+- key OTA handlers were re-anchored using a direct 2.9.0 decompressed-image IDA
+  analysis; independent reproduction still requires the owner-supplied image;
 - the hardware observations are owner-reported on one unit.
 
 ## What the tools do not do

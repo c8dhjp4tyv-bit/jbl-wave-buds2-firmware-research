@@ -10,64 +10,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import lzma
-import re
-import zlib
+from ota_container import parse as parse_container
 from pathlib import Path
-
-BLOCK_SIZE = 0x20000
-LZMA_HEADER = b"\x5d\x00\x00\x00\x04" + b"\xff" * 8
-CRC_PREFIX = b"CRC32_OF_IMAGE=0x"
 
 
 def parse(packed: bytes) -> dict:
-    trailer = packed.find(CRC_PREFIX)
-    if trailer < 8:
-        raise ValueError("CRC trailer marker not found")
-    match = re.fullmatch(rb"CRC32_OF_IMAGE=0x([0-9A-Fa-f]{8})\n", packed[trailer:])
-    if not match:
-        raise ValueError("unexpected CRC trailer shape")
-
-    stored_crc = int(match.group(1), 16)
-    crc_input_end = trailer + len(CRC_PREFIX)
-    calc_crc = zlib.crc32(packed[:crc_input_end]) & 0xFFFFFFFF
-    header_len0 = int.from_bytes(packed[4:8], "big")
-
-    starts: list[int] = []
-    cursor = 8
-    while True:
-        cursor = packed.find(LZMA_HEADER, cursor, trailer)
-        if cursor < 0:
-            break
-        starts.append(cursor)
-        cursor += len(LZMA_HEADER)
-    if not starts or starts[0] != 8:
-        raise ValueError("first LZMA stream is not at offset 8")
-    ends = starts[1:] + [trailer]
-
-    blocks: list[bytes] = []
-    compressed: list[bytes] = []
-    for index, (start, end) in enumerate(zip(starts, ends)):
-        chunk = packed[start:end]
-        decoder = lzma.LZMADecompressor(format=lzma.FORMAT_ALONE)
-        if index < len(starts) - 1:
-            blocks.append(decoder.decompress(chunk, max_length=BLOCK_SIZE))
-            compressed.append(chunk[:-4])  # drop the trailing next-stream length field
-        else:
-            blocks.append(decoder.decompress(chunk))
-            compressed.append(chunk)
-
-    return {
-        "header": packed[:8],
-        "header_len0": header_len0,
-        "streams": len(starts),
-        "compressed": compressed,
-        "blocks": blocks,
-        "trailer": trailer,
-        "crc_input_end": crc_input_end,
-        "stored_crc": stored_crc,
-        "calc_crc": calc_crc,
-    }
+    """Parse a package with the shared strict length-directed parser."""
+    return parse_container(packed)
 
 
 def main() -> None:

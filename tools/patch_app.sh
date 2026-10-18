@@ -4,8 +4,8 @@
 #
 # It wraps the mechanical part of patching YOUR OWN copy of the JBL Headphones
 # APK set: apply the network_security_config user-CA change, rebuild, align, and
-# sign. The smali edit that neutralizes the config verifier is described below
-# and must be applied to the decoded tree before `apktool b` (step 3).
+# sign. The device-authenticity / anti-counterfeit verifier is deliberately not modified.
+# Only the network trust configuration is changed for the owner's OTA experiment.
 #
 # This script distributes nothing proprietary. You supply the APKs, pulled from
 # your own device:
@@ -50,20 +50,11 @@ else:
     print("    user anchor already present")
 PY
 else
-  echo "[!] no network_security_config.xml found; you may need to add one and reference it in AndroidManifest.xml"
+  echo "[!] network_security_config.xml missing; refusing to proceed without reviewing the trust config" >&2
+  exit 1
 fi
 
-cat <<'NOTE'
-
-[*] MANUAL STEP — neutralize the config verifier (docs/08, step 3.2)
-    In the decoded tree under smali*/com/jbl/counterfeit/, make EnumVerifyResult
-    report success: the PASS implementation's isPass() returns true and isFail()
-    returns false, so Rsa2048DynamicVerifier.verifySignatureLoop() cannot reject
-    a modified config. (For PID 2100 the captured config carried no signature
-    field, so this may be a no-op; it is kept for robustness.)
-    Apply that edit now, then press Enter to continue the build.
-NOTE
-read -r _
+echo "[*] leaving the device-authenticity verifier unchanged"
 
 echo "[*] building"
 apktool b -o "$BUILD/base.unsigned.apk" "$BUILD/base"

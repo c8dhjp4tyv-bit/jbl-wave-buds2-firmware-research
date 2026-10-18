@@ -43,10 +43,11 @@ Adresler incelenen yapıdandır (`wavebuds.elf`); bkz.
   CRC-geçerli, tek baytı değiştirilmiş bir imaj kabul edildi ve boot etti.
 - Uygulamadaki RSA-2048 doğrulayıcı (`com.jbl.counterfeit.Rsa2048DynamicVerifier`)
   **anti-counterfeit** (cihaz gerçekliği) içindir, firmware imzası değil.
-- Uygulama OTA uç noktalarını **pinlemiyor**; kullanıcı CA'sı OTA config'i
-  yakalamak ve değiştirmek için yeterli.
-- OTA **staged**: yeni imaj flash tabanı `0x28120000`'a kopyalanır, çalışan
-  uygulama korunur; indirme fazı brick'e dayanıklıdır.
+- Test edilen **değiştirilmiş uygulama** OTA akışında pinning yerel proxy'yi
+  engellemedi. Orijinal uygulama yalnızca sistem CA'larına güvenir; kullanıcı
+  CA'sı için sahibinin uygulama güven yapılandırmasını değiştirmesi gerekir.
+- OTA **staged**: yeni imaj `0x28120000` adresine yazılır, çalışan uygulama
+  korunur. Bu aktarım sırasındaki riski azaltır; garantili kurtarma sağlamaz.
 - Harici bir BLE central OTA'yı **süremez**: handler'lar cihaz içi TWS/bağlantı
   durumuna bağlıdır (`0x2C0905E4`: `MEMORY[0x20026BA0] ∈ {2,4}`).
 - BES **TOTA v2** taşıması AES-128 oturum anahtarını tamamen istemci tarafında
@@ -116,7 +117,7 @@ ve decompile tek-bayt farkı deterministiktir. Uygulama üzerinden gönderim:
 
 - JBL firmware'ini, uygulamayı (orijinal veya değiştirilmiş) veya kullanıma hazır
   özel imajı dağıtmaz.
-- Cihaz-gerçekliği (anti-counterfeit) yoluna dokunmaz.
+- Belgelenen derleme aracı anti-counterfeit doğrulamasına dokunmaz.
 - ROM bootloader'ın secure boot'tan yoksun olduğunu kanıtlamaz — o bölge her OTA
   imajının dışındadır ve dökülmedi; iddia statik kanıt + tek ünitede gözlemlenen
   değiştirilmiş-imaj boot'uyla sınırlandırılmıştır.
