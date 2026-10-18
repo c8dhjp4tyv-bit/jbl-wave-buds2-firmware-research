@@ -1,0 +1,3 @@
+algorithm,input_description,input_range,expected_crc32,reproduce
+zlib_crc32,official 2.9.0 package bytes through the "CRC32_OF_IMAGE=0x" prefix,[0x0 0x862AD),A0C7CCEC,python3 tools/crc_check.py <package>
+zlib_crc32,crc_check.py synthetic self-test buffer,synthetic,F455BC05,python3 tools/crc_check.py --selftest

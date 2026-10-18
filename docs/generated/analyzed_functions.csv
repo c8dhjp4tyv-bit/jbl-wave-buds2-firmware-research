@@ -1,0 +1,16 @@
+va,size,role,evidence_class,confidence,notes
+0x2C01000C,0x8,entry stub (start),STATIC_IDA,CONFIRMED,image entry point just after the 12-byte header
+0x2C0918BC,0x622,OTA command handler (opcode dispatch),STATIC_IDA,CONFIRMED,dispatches 0x80/0x82/0x85/0x86/0x92; all integrity via CRC-32 + BEST magic
+0x2C0905E4,0x10,OTA-state gate,STATIC_IDA,CONFIRMED,returns true only when MEMORY[0x20026BA0] in {2,4}; 18 call sites
+0x2C0CE944,0x3C,CRC-32 (table-driven),STATIC_IDA,CONFIRMED,table at 0x2C0F5218; used for config/segment/whole-image integrity
+0x2C092014,UNRESOLVED,aligned flash copy,STATIC_IDA,CONFIRMED,destination base 0x28120000 (offset 0x120000); no verification
+0x2C091384,UNRESOLVED,ota_register_user,STATIC_IDA,HIGH,registers a flash region in the OTA user table (~0x20027400)
+0x2C0CD0BC,UNRESOLVED,ota_init_flash,STATIC_IDA,HIGH,norflash_api register; 0x2000-byte block
+0x2C0DB3E0,UNRESOLVED,flash sector erase,STATIC_IDA,HIGH,trace-tag/usage
+0x2C0DAD80,UNRESOLVED,flash program,STATIC_IDA,HIGH,trace-tag/usage
+0x2C0DB350,UNRESOLVED,flash flush,STATIC_IDA,HIGH,trace-tag/usage
+0x2C091488,UNRESOLVED,OTA response builder,STATIC_IDA,HIGH,builds status responses from the OTA handler
+0x2C0941CC,UNRESOLVED,SPP RX reassembly,STATIC_IDA,HIGH,17-byte BE 05 control packet resets the buffer; dispatches to 0x2C0937F0
+0x2C0937F0,UNRESOLVED,SPP/data transport dispatch,STATIC_IDA,HIGH,parses 0xBE-framed packets; data/OTA-over-SPP path
+0x2C067E0C,UNRESOLVED,UARTCMD handler,STATIC_IDA,HIGH,factory console UART bridge; response ",1,%s\n"
+0x2C0DB460,UNRESOLVED,log printf (TAG fmt),STATIC_IDA,HIGH,most cross-referenced function (501+)

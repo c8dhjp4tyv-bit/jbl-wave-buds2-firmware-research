@@ -1,0 +1,14 @@
+va,symbol,meaning,evidence
+0x2C01FA60,RTX V5.5.1,Keil RTX5 kernel version string,STATIC_IDA
+0x2C03487B,HARMAN+JBL_WAVE_BUDS2+20240516+V1.0.4,static HARMAN product build id (also at 0x2C03E168),STATIC_IDA
+0x2C0F899C,build-config blob,CHIP/FLASH/OTA_CODE_OFFSET/BUILD_DATE/REV_INFO,STATIC_IDA
+0x2C0162B3,(SecureFault),Cortex-M33 TrustZone-M exception name,STATIC_IDA
+0x2C0F10B0,factory command table,59-entry [handler][name_ptr] dispatch table (analyzed build),STATIC_IDA
+0x2C0F5218,CRC-32 lookup table,table used by the CRC-32 routine 0x2C0CE944,STATIC_IDA
+0x2C0DC800,factory string blob,null-terminated factory command names (_NTC/CIDW/CIDR...),STATIC_IDA
+0x2C0DDA10,OTA_GET_VERSION,OTA command log tag,STATIC_IDA
+0x2C0DDA3D,OTA_START,OTA command log tag,STATIC_IDA
+0x2C0DDA47,OTA_CONFIG,OTA command log tag,STATIC_IDA
+0x2C0DDA52,OTA_SEGMENT_CRC,OTA segment CRC log tag,STATIC_IDA
+0x2C0E18EF,CRC32_OF_IMAGE=0x,container CRC trailer prefix constant,STATIC_IDA
+0x2C0E1901,plaese check config len. %d != %d,OTAConfigure length-check diagnostic (sic),STATIC_IDA

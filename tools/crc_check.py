@@ -40,7 +40,8 @@ def selftest() -> None:
     crc = zlib.crc32(body) & 0xFFFFFFFF
     package = body + f"{crc:08X}\n".encode("ascii")
     stored, calculated, _ = check(package)
-    assert stored == calculated == crc, "selftest failed"
+    if not (stored == calculated == crc):  # not an assert: must stay active under -O
+        raise SystemExit("selftest FAILED")
     print(f"selftest: OK (crc={crc:08X})")
 
 

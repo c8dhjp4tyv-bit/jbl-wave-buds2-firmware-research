@@ -1,0 +1,13 @@
+address,name,role,evidence,source_fn
+0x20026BA0,ota_state,OTA accept gate; handlers proceed only when value in {2,4},STATIC_IDA,0x2C0905E4
+0x2002739C,ota_image_size,expected whole-image size recorded by startOTA (0x80),STATIC_IDA,0x2C0918BC case 0x80
+0x200273AC,ota_image_crc,expected whole-image CRC-32 recorded by startOTA,STATIC_IDA,0x2C0918BC case 0x80
+0x200273B0,ota_running_crc,running CRC-32 of received image data,STATIC_IDA,0x2C0918BC case 0x82
+0x20027418,ota_config_crc,expected config CRC-32 over the first 88 config bytes,STATIC_IDA,0x2C0918BC case 0x86
+0x200274F4,ota_overwrite_flag,activation flag set to 1 by imageOverwriteConfirm (0x92) after whole-image CRC,STATIC_IDA,0x2C0918BC case 0x92
+0x2002738C,ota_staging_buf,staging/scratch buffer pointer,STATIC_IDA,0x2C0918BC case 0x85
+0x20027394,ota_buf_fill,staging buffer fill offset (flushed at 0x1000),STATIC_IDA,0x2C0918BC case 0x85
+0x20027398,ota_written,bytes programmed to staging flash,STATIC_IDA,0x2C0918BC case 0x85
+0x200273A0,ota_received,total image bytes received,STATIC_IDA,0x2C0918BC case 0x85/0x88
+0x20011DF8,ota_retry,segment retry counter (initialized to 3),STATIC_IDA,0x2C0918BC case 0x82
+0x2002392C,ota_status,status code emitted with OTA responses,STATIC_IDA,0x2C0918BC multiple
