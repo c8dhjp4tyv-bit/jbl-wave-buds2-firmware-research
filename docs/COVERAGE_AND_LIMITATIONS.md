@@ -1,0 +1,49 @@
+# Coverage, confidence, and limitations
+
+## Confidence by claim
+
+| Claim | Confidence | Basis |
+|---|---|---|
+| OTA container format and CRC recipe | **CONFIRMED** | byte-identical repack; CRC self-test + 2.9.0 vector (`STATIC_RAW`) |
+| OTA image integrity is CRC-32 only, no signature | **CONFIRMED** | handler decompile + string/routine search (`STATIC_IDA`) + modified image booted (`HARDWARE`) |
+| App has no OTA certificate pinning | **HIGH** | no `CertificatePinner`; user-CA MITM captured and rewrote config (`STATIC_IDA` + `HARDWARE`) |
+| RSA-2048 in the app is anti-counterfeit, not firmware signing | **HIGH** | class/method analysis; no config signature field observed for this product (`STATIC_IDA`) |
+| OTA is staged; download phase is brick-safe | **HIGH** | flash copy base `0x28120000`; running app region untouched (`STATIC_IDA`) |
+| External BLE central cannot drive OTA (TWS-state gate) | **HIGH** | gate predicate + 18 call sites; standalone session stalls at config/start (`STATIC_IDA` + `HARDWARE`) |
+| TOTA v2 key schedule is client-derived (no device secret) | **CONFIRMED** | handshake reproduced; device returned "connect success" (`STATIC_IDA` + `HARDWARE`) |
+| Factory console exists with identity/calibration writes | **CONFIRMED** (inventory) | `factory_command_table.csv` (`STATIC_RAW` + `STATIC_IDA`) |
+| Factory console reachable over the air | **UNRESOLVED** | no wireless path to the AT parser demonstrated |
+| No secure boot enforced in ROM | **LIKELY** | no signature block; modified image booted; **ROM not dumped** |
+| Anti-rollback / downgrade protection | **UNRESOLVED** | none seen in the application image; ROM behavior unknown |
+
+## What is well covered
+
+The OTA pipeline end to end: the container format, the CRC recipe, the BLE/GATT
+command protocol, the BES TOTA v2 transport, the device-side OTA command handler
+and its CRC-only integrity model, the staged-flash brick-safety argument, the
+app-side trust configuration, and a reproducible owner-device delivery method.
+
+## What is partial
+
+- The RAM map is limited to OTA-path variables (`ram_state_vars.csv`).
+- The factory console is inventoried but its over-the-air reachability is open.
+- The exact top of the OTA staging region is inferred, not read from a table.
+- Function addresses are anchored on the analyzed build, not the 2.9.0 build.
+
+## What is unresolved
+
+- The ROM / secondary bootloader (`0x000000`–`0x010000`) is outside every OTA
+  image and was not dumped; any ROM-level secure-boot or rollback logic is
+  therefore unproven either way.
+- Audio/ANC, codec, and Bluetooth-stack function semantics (the bulk of the
+  7,960 functions) are enumerated but not reverse-engineered.
+- No independent second-tool (Ghidra) cross-check was run for this release.
+- No UART/SWD or logic-analyzer capture; dynamic evidence is limited to
+  owner-observed app/update behavior on one unit.
+
+## Single-unit caveat
+
+All hardware observations are from one author-owned unit on the firmware
+revisions named in [PROVENANCE.md](PROVENANCE.md). Nothing here is validated on
+another unit, region, or firmware revision, and firmware modification is
+performed at the owner's risk (see [../SAFETY.md](../SAFETY.md)).

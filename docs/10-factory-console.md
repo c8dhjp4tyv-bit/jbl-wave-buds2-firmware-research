@@ -8,10 +8,16 @@ table of 59 entries lives at `0x2C0F10B0`; each entry is an 8-byte
 the image; the UART bridge is `UARTCMD` (`sub_2C067E0C`), and an `AT+TEST=`
 front-end is also present.
 
+> Addresses below are from the **analyzed build** (`wavebuds.elf`), which has
+> **59** entries. The **2.9.0** distribution build exposes **54** contiguous
+> entries at shifted addresses; the current, tool-reproduced table is in
+> [`generated/factory_command_table.csv`](generated/factory_command_table.csv).
+> See [PROVENANCE.md](PROVENANCE.md) and [ADDRESS_LEDGER.md](ADDRESS_LEDGER.md).
+
 ## Command inventory (verified)
 
 All 59 names were extracted from the pointer table at `0x2C0F10B0` and the string
-blob it references. Handler addresses are at image base `0x2C010000`.
+blob it references (analyzed build). Handler addresses are at image base `0x2C010000`.
 
 Identity and calibration — write:
 
