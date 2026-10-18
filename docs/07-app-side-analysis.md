@@ -38,6 +38,11 @@ The app ships a configuration signature verifier:
   `isPass()` / `isFail()` / `isUnknown()`; the enum implementations are
   `PASS`, `FAIL(WRONG_SIGNATURE)`, `UNKNOWN`.
 - A PEM public key is embedded in `classes3.dex`.
+- The decoded `com/jbl/counterfeit/` package contains `Rsa2048DynamicVerifier`
+  (`.smali` + `$a`–`$d`, `$WhenMappings`), `Aes256CbcVerifier`, `CounterfeitHelper`,
+  and `enums/EnumVerifyResult` (`$FAIL`, `$DefaultImpls`). Device authenticity uses
+  both an RSA-2048 and an AES-256-CBC verifier — this is the anti-counterfeit
+  machinery, distinct from firmware signing.
 
 Important nuance: the `ota_config.json` body captured for PID 2100 contained **no
 signature field**. So for this product/endpoint, no config signature was present
@@ -47,11 +52,12 @@ traffic.
 
 ## Transport trust
 
-- No `okhttp` `CertificatePinner` is configured for the OTA hosts — there is no
-  application-level certificate pinning.
+- A search for `okhttp3.CertificatePinner` across the app's dex found **zero**
+  references — there is no application-level certificate pinning anywhere, for the
+  OTA hosts or otherwise.
 - `network_security_config.xml` originally trusts `system` anchors only. Adding a
   `<certificates src="user"/>` anchor (a one-line change) makes the app trust a
-  user-installed CA.
+  user-installed CA; the patched decode confirms exactly this single addition.
 
 Consequently the OTA configuration and download can be intercepted with a user CA
 and a local proxy — no pinning bypass is required. This is the transport-side
